@@ -1,0 +1,331 @@
+# ============================================================
+# LP Builder Pro - マーケティング戦略ナレッジ
+# ベンチャーくん式 4-Step Full Cycle
+# ============================================================
+# 用途: LP設計 / オファー構築 / ファネル設計 / KPI管理
+# ============================================================
+
+meta:
+  name: "マーケティング戦略ナレッジ"
+  version: "1.0"
+  source: "ベンチャーくん"
+  use_cases:
+    - "LP構成設計"
+    - "オファー設計"
+    - "価格設定"
+    - "ファネル構築"
+    - "KPI設計"
+
+# ============================================================
+# 6-1 ブランド戦略 & ペルソナ
+# ============================================================
+brand_and_persona:
+  brand:
+    usp:
+      description: "何を・誰に・どう独自に提供するか"
+      template: "〈ターゲット〉の〈悩み〉を〈独自の方法〉で解決し〈ベネフィット〉を提供"
+    
+    tagline:
+      description: "短く覚えやすい約束フレーズ"
+      rules:
+        - "10文字以内が理想"
+        - "ベネフィットを含める"
+        - "差別化要素を入れる"
+    
+    pillars:
+      description: "価値基盤（3つ）"
+      examples:
+        - "専門性"
+        - "実績"
+        - "サポート"
+    
+    archetype:
+      description: "ブランドの人格タイプ"
+      options:
+        - name: "Hero"
+          traits: "挑戦、勝利、成長"
+          suitable_for: "ビジネス系、スポーツ系"
+        - name: "Sage"
+          traits: "知恵、真実、教育"
+          suitable_for: "教育系、コンサル系"
+        - name: "Creator"
+          traits: "革新、想像力、表現"
+          suitable_for: "クリエイティブ系"
+        - name: "Caregiver"
+          traits: "共感、保護、サポート"
+          suitable_for: "健康系、美容系"
+    
+    tone_manner:
+      description: "語調・文体ルール"
+      examples:
+        - "です・ます調"
+        - "専門用語は使わない"
+        - "親しみやすく、でも軽すぎない"
+  
+  personas:
+    template:
+      id: "persona_X"
+      label: "〈ペルソナ名〉"
+      core_pain: "〈主な悩み〉"
+      trigger_ids: ["使用する心理トリガーID"]
+      primary_offer_tier: "front / middle / back"
+    
+    examples:
+      - id: "persona_1"
+        label: "情報収集段階の初心者"
+        core_pain: "何から始めればいいかわからない"
+        trigger_ids: ["MERE_EXP", "PRIMING"]
+        primary_offer_tier: "front"
+      
+      - id: "persona_2"
+        label: "比較検討中の中級者"
+        core_pain: "どれを選べばいいか迷っている"
+        trigger_ids: ["ANCHOR", "SOC_PROOF"]
+        primary_offer_tier: "middle"
+      
+      - id: "persona_3"
+        label: "成果拡大を求める上級者"
+        core_pain: "もっと効率的に結果を出したい"
+        trigger_ids: ["AUTHORITY", "IN_GROUP"]
+        primary_offer_tier: "back"
+
+# ============================================================
+# 6-2 集客 & ローンチカレンダー
+# ============================================================
+traffic_and_launch:
+  omni_channels:
+    - channel: "SEO Blog"
+      kpi: "Organic Leads"
+      best_for: "長期的な資産構築"
+    
+    - channel: "Social Media"
+      kpi: "Engagement Rate"
+      best_for: "認知拡大・ファン化"
+    
+    - channel: "Short-Form Video"
+      kpi: "Reach"
+      best_for: "バイラル・リーチ拡大"
+    
+    - channel: "Live Webinar"
+      kpi: "Registrations"
+      best_for: "高単価商品のセールス"
+    
+    - channel: "Affiliate"
+      kpi: "CPA"
+      best_for: "成果報酬型の拡大"
+  
+  launch_calendar_quarter:
+    - week: "W-1"
+      theme: "Teaser / Problem Awareness"
+      goal: "指名検索増"
+      primary_channel: "Social Media"
+      tactics:
+        - "問題提起コンテンツ"
+        - "ティーザー動画"
+    
+    - week: "W+1"
+      theme: "Free Value Event"
+      goal: "リード獲得"
+      primary_channel: "Live Webinar"
+      tactics:
+        - "無料ウェビナー"
+        - "リードマグネット配布"
+    
+    - week: "W+3"
+      theme: "Front Offer Launch"
+      goal: "初回CVR最大化"
+      primary_channel: "Email"
+      tactics:
+        - "ローンチメール"
+        - "期間限定オファー"
+    
+    - week: "W+6"
+      theme: "Back-End Upsell"
+      goal: "AOV向上"
+      primary_channel: "Community"
+      tactics:
+        - "アップセル提案"
+        - "VIPプログラム案内"
+
+# ============================================================
+# 6-3 価格 & オファー設計
+# ============================================================
+pricing_and_offers:
+  product_sets:
+    description: "商品セット設計テンプレート"
+    
+    template:
+      set_id: "ps_XXX"
+      theme: "〈セットのテーマ〉"
+      offers:
+        front:
+          title: "〈フロント商品名〉"
+          price: 1000
+          concept: "〈10分で行動できる価値〉"
+          persona_id: "persona_1"
+        
+        middle:
+          title: "〈ミドル商品名〉"
+          price: 10000
+          concept: "〈実践的なワークショップ〉"
+          persona_id: "persona_1"
+        
+        back:
+          title: "〈バック商品名〉"
+          price: 80000
+          concept: "〈本格的なプログラム〉"
+          persona_id: "persona_2"
+        
+        downsell:
+          title: "〈ダウンセル商品名〉"
+          price: 5000
+          concept: "〈バックを買わなかった人向け〉"
+          persona_id: "persona_1"
+        
+        order_bump:
+          title: "〈オーダーバンプ商品名〉"
+          price: 1500
+          concept: "〈購入時に追加できる小物〉"
+          persona_id: "persona_1"
+    
+    examples:
+      - set_id: "ps_starter"
+        theme: "Starter Transformation"
+        offers:
+          front:
+            title: "Quick-Start Guide"
+            price: 1000
+            concept: "10分で始められる入門書"
+          middle:
+            title: "Deep-Dive Workshop"
+            price: 10000
+            concept: "実践型ワークショップ"
+          back:
+            title: "Mastermind Program"
+            price: 80000
+            concept: "8週間グループコーチング"
+          downsell:
+            title: "Workshop Recording"
+            price: 5000
+            concept: "動画で学べる録画版"
+          order_bump:
+            title: "Toolkit Templates"
+            price: 1500
+            concept: "すぐ使えるテンプレート集"
+  
+  drm_funnel:
+    description: "DRMセールスファネル（7ステップ）"
+    steps:
+      - step: 1
+        label: "Lead Magnet"
+        asset: "無料チェックリスト"
+        trigger_ids: ["PRIMING"]
+        goal: "メールアドレス取得"
+      
+      - step: 2
+        label: "Tripwire"
+        asset: "ミニコース（低価格）"
+        trigger_ids: ["ANCHOR"]
+        goal: "初回購入のハードルを下げる"
+      
+      - step: 3
+        label: "Core Offer"
+        asset: "メイン商品"
+        trigger_ids: ["SCARCITY", "FOMO"]
+        goal: "収益の柱"
+      
+      - step: 4
+        label: "Profit Maximizer"
+        asset: "VIPアップグレード"
+        trigger_ids: ["AUTHORITY"]
+        goal: "AOV向上"
+      
+      - step: 5
+        label: "Retention"
+        asset: "会員コミュニティ"
+        trigger_ids: ["GAMIF"]
+        goal: "継続課金・LTV向上"
+      
+      - step: 6
+        label: "Referral"
+        asset: "アフィリエイト制度"
+        trigger_ids: ["RECIPROC"]
+        goal: "紹介による新規獲得"
+      
+      - step: 7
+        label: "Re-activation"
+        asset: "期間限定セール"
+        trigger_ids: ["TEMP_DIS"]
+        goal: "休眠顧客の復活"
+  
+  ltv_maximization:
+    upsell:
+      mechanism: "Core → Mastermind"
+      expected_lift_pct: 25
+    
+    cross_sell:
+      mechanism: "Workshop → Template Pack"
+      expected_lift_pct: 15
+    
+    referral:
+      mechanism: "紹介で10%クレジット"
+      expected_lift_pct: 10
+    
+    community:
+      mechanism: "有料メンバーシップ"
+      expected_lift_pct: 20
+
+# ============================================================
+# 6-4 オートメーション & KPI管理
+# ============================================================
+automation_and_kpi:
+  ma_stack:
+    crm: "HubSpot / Salesforce"
+    email: "ConvertKit / Mailchimp"
+    workflow: "Zapier / Make"
+    analytics: "Looker Studio / GA4"
+  
+  lead_scoring:
+    engagement_weight: 0.5
+    purchase_history_weight: 0.3
+    persona_fit_weight: 0.2
+    thresholds:
+      MQL: 60
+      SQL: 80
+  
+  dashboard_kpis:
+    - metric: "CAC"
+      target: 1000
+      alert_threshold: 1300
+      unit: "¥"
+      description: "顧客獲得コスト"
+    
+    - metric: "Front-Offer CVR"
+      target: 5
+      alert_threshold: 3
+      unit: "%"
+      description: "フロント商品の成約率"
+    
+    - metric: "AOV"
+      target: 15000
+      alert_threshold: 12000
+      unit: "¥"
+      description: "平均注文単価"
+    
+    - metric: "90-day LTV"
+      target: 30000
+      alert_threshold: 22000
+      unit: "¥"
+      description: "90日間の顧客生涯価値"
+  
+  optimization_protocol:
+    cadence: "隔週"
+    process:
+      - "仮説立案"
+      - "A/Bテスト実施"
+      - "結果読み取り"
+      - "勝者をロールアウト"
+    prioritization_matrix:
+      - "Impact（影響度）"
+      - "Ease（実行容易性）"
+      - "Confidence（確信度）"

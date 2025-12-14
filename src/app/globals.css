@@ -2,26 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    /* Reference Palette */
+    --full-bg: 216 20% 82%; /* #C7D2DC */
+    --sidebar-bg: 242 30% 14%; /* #19182D */
+    --sidebar-primary: 241 100% 78%; /* #9290FF */
+    
+    /* Shadcn Theme mapped to Reference */
+    --background: 0 0% 100%;
+    --foreground: 230 25% 10%; /* #0C0E19 */
+    
+    --card: 0 0% 100%;
+    --card-foreground: 230 25% 10%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 25% 10%;
+    
+    /* Primary Action -> Sidebar Primary color */
+    --primary: 241 100% 78%; /* #9290FF */
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 220 14% 96%; /* #F1F3FF */
+    --secondary-foreground: 230 25% 10%;
+    
+    --muted: 220 14% 96%;
+    --muted-foreground: 225 15% 50%; /* #989EB3 */
+    
+    --accent: 220 14% 96%;
+    --accent-foreground: 230 25% 10%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 241 100% 78%; /* #9290FF */
+    
+    --radius: 0.75rem; /* More rounded */
+  }
+ 
+  .dark {
+    --background: 242 30% 14%;
+    --foreground: 0 0% 100%;
+    /* Dark mode configs... (omitted for MVP simplicity, sticking to reference light/dark mix) */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
   }
 }

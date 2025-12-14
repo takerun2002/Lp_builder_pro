@@ -1,0 +1,7 @@
+{
+  "auto_compact": true,
+  "compact_threshold": 0.8,
+  "preferred_model": "claude-3-5-sonnet-20241022" 
+}
+
+

@@ -1,0 +1,14 @@
+node_modules
+.git
+.next
+.DS_Store
+dist
+build
+coverage
+*.log
+.env
+.env.local
+**/*.map
+LP_Builder_Pro_要件定義書_v1.0.pdf
+LP_Builder_Pro_要件定義書_v1.0.html
+

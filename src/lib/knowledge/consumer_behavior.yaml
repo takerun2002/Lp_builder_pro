@@ -1,0 +1,510 @@
+# ============================================================
+# LP Builder Pro - 消費行動・購買導線ナレッジ
+# ベンチャーくん式 MOL-MOA シナリオ設計
+# ============================================================
+# 用途: ターゲット分析 / 心理トリガー / ファネル設計 / コピー作成
+# ============================================================
+
+meta:
+  name: "消費行動・購買導線ナレッジ"
+  version: "1.1"
+  source: "ベンチャーくん"
+  use_cases:
+    - "ターゲット分析"
+    - "LP構成設計"
+    - "コピーライティング"
+    - "心理トリガー適用"
+    - "カスタマージャーニー設計"
+
+# ============================================================
+# 1. 購買導線マップ（ファネル × タッチポイント）
+# ============================================================
+purchase_funnel_map:
+  - stage: "Awareness"
+    goal_cognitive: "商品カテゴリの存在を知る"
+    key_questions:
+      - "何それ？"
+      - "自分に関係ある？"
+    dominant_emotions:
+      - "好奇心"
+      - "軽い警戒"
+    touchpoints:
+      - "SNS広告"
+      - "UGCリール"
+      - "友人の口コミ"
+    metrics:
+      - "IMP"
+      - "Reach"
+      - "指名検索数"
+    lp_section: "ヘッドコピー"
+  
+  - stage: "Interest"
+    goal_cognitive: "もっと詳しく知りたい"
+    key_questions:
+      - "どんなメリット？"
+      - "誰が使ってる？"
+    dominant_emotions:
+      - "期待"
+      - "比較欲"
+    touchpoints:
+      - "ブログ記事"
+      - "ショート動画"
+      - "WebメディアPR"
+    metrics:
+      - "CTR"
+      - "記事読了率"
+      - "直帰率"
+    lp_section: "ストーリー・問題提起"
+  
+  - stage: "Consideration"
+    goal_cognitive: "自分に合うか検討"
+    key_questions:
+      - "価格は？"
+      - "他社との違いは？"
+    dominant_emotions:
+      - "損失回避"
+      - "不安"
+    touchpoints:
+      - "レビューサイト"
+      - "ウェビナー"
+      - "比較表DL"
+    metrics:
+      - "資料請求数"
+      - "メール開封率"
+      - "セミナー参加率"
+    lp_section: "主張と証拠・商品の提示"
+  
+  - stage: "Intent"
+    goal_cognitive: "購入を具体的に想定"
+    key_questions:
+      - "本当に買うべき？"
+      - "今買う動機は？"
+    dominant_emotions:
+      - "希少性による焦り"
+      - "安心感を求める"
+    touchpoints:
+      - "カート画面"
+      - "クーポンDM"
+      - "チャット相談"
+    metrics:
+      - "カゴ投入率"
+      - "クーポン使用率"
+      - "チャットCVR"
+    lp_section: "オファー・限定性"
+  
+  - stage: "Purchase"
+    goal_cognitive: "決済を完了"
+    key_questions:
+      - "決済は安全？"
+      - "配送は早い？"
+    dominant_emotions:
+      - "解放感"
+      - "期待感"
+    touchpoints:
+      - "決済UI"
+      - "メールレシート"
+      - "発送通知"
+    metrics:
+      - "CVR"
+      - "決済エラー率"
+      - "返品率"
+    lp_section: "保証・Q&A"
+  
+  - stage: "Retention"
+    goal_cognitive: "継続利用・リピート"
+    key_questions:
+      - "メンテは簡単？"
+      - "さらに得できる？"
+    dominant_emotions:
+      - "満足"
+      - "習慣化"
+    touchpoints:
+      - "アプリPush"
+      - "会員プログラム"
+      - "リピートクーポン"
+    metrics:
+      - "再購買率"
+      - "LTV"
+      - "NPS"
+    lp_section: "追伸（次のステップ提示）"
+  
+  - stage: "Advocacy"
+    goal_cognitive: "推奨・拡散"
+    key_questions:
+      - "友人に薦めたい？"
+      - "自慢できる？"
+    dominant_emotions:
+      - "優越感"
+      - "所属感"
+    touchpoints:
+      - "口コミ投稿画面"
+      - "紹介コード"
+      - "コミュニティイベント"
+    metrics:
+      - "紹介数"
+      - "UGC件数"
+      - "SNSシェア率"
+    lp_section: "お客様の声"
+
+# ============================================================
+# 2. 心理的トリガー 50選（行動経済学ベース）
+# ============================================================
+psychological_triggers:
+  # LP制作で特に重要な20選
+  high_priority:
+    - id: "SCARCITY"
+      name: "希少性"
+      theory: "Scarcity"
+      description: "残りわずか・期間限定の強調で購買を加速"
+      stage_hint: ["Intent", "Purchase"]
+      lp_usage: "「残り3席」「本日23:59まで」"
+    
+    - id: "SOC_PROOF"
+      name: "社会的証明"
+      theory: "Social Proof"
+      description: "他者の行動を模倣し安心を得る"
+      stage_hint: ["Interest", "Consideration"]
+      lp_usage: "「1,247人が実践」「満足度96.7%」"
+    
+    - id: "ANCHOR"
+      name: "アンカリング"
+      theory: "Anchoring"
+      description: "初期提示価格が基準となり割安感を演出"
+      stage_hint: ["Consideration"]
+      lp_usage: "「通常価格98,000円→今だけ49,800円」"
+    
+    - id: "FOMO"
+      name: "FOMO"
+      theory: "Fear of Missing Out"
+      description: "逃す恐怖を煽り即決率を上げる"
+      stage_hint: ["Intent"]
+      lp_usage: "「今だけの特典」「二度とない機会」"
+    
+    - id: "LOSS_AVOID"
+      name: "損失回避"
+      theory: "Loss Aversion"
+      description: "損を避けたい心理で購入を正当化"
+      stage_hint: ["Consideration"]
+      lp_usage: "「放置すると〇〇の損失」"
+    
+    - id: "AUTHORITY"
+      name: "権威バイアス"
+      theory: "Authority Bias"
+      description: "専門家推薦で信頼を高速輸入"
+      stage_hint: ["Interest", "Consideration"]
+      lp_usage: "「〇〇大学教授推薦」「業界第一人者監修」"
+    
+    - id: "RECIPROC"
+      name: "返報性"
+      theory: "Reciprocity"
+      description: "先に価値提供し'お返し'行動を引き出す"
+      stage_hint: ["Interest", "Intent"]
+      lp_usage: "「無料で〇〇プレゼント」"
+    
+    - id: "COMMIT"
+      name: "コミットメント"
+      theory: "Commitment & Consistency"
+      description: "小さなYesが大きなYesを呼ぶ"
+      stage_hint: ["Interest", "Consideration"]
+      lp_usage: "「まずは無料診断から」"
+    
+    - id: "CONTRAST"
+      name: "コントラスト"
+      theory: "Contrast Effect"
+      description: "比較順序でお得感を操作"
+      stage_hint: ["Consideration"]
+      lp_usage: "「競合Aは〇〇万円、当社は△△円」"
+    
+    - id: "STORY"
+      name: "ストーリーテリング"
+      theory: "Narrative Transport"
+      description: "物語に没入させ行動を誘う"
+      stage_hint: ["Awareness", "Interest"]
+      lp_usage: "「私も昔は〇〇で悩んでいました...」"
+    
+    - id: "CERTAINTY"
+      name: "確実性効果"
+      theory: "Certainty Effect"
+      description: "100%保証でリスク知覚をゼロ化"
+      stage_hint: ["Consideration"]
+      lp_usage: "「全額返金保証」「成果保証」"
+    
+    - id: "ENDOWMENT"
+      name: "保有効果"
+      theory: "Endowment Effect"
+      description: "所有したと感じると価値評価が上がる"
+      stage_hint: ["Consideration", "Intent"]
+      lp_usage: "「まずは30日間お試し」"
+    
+    - id: "PRIMING"
+      name: "プライミング"
+      theory: "Priming"
+      description: "事前刺激で選好を誘導"
+      stage_hint: ["Awareness"]
+      lp_usage: "「成功」「自由」などの言葉を先に提示"
+    
+    - id: "DECOY"
+      name: "おとり効果"
+      theory: "Decoy Effect"
+      description: "第三の選択肢を置いて狙いの商品を選ばせる"
+      stage_hint: ["Consideration"]
+      lp_usage: "「3つのプランの中央がおすすめ」"
+    
+    - id: "FRAMING"
+      name: "フレーミング"
+      theory: "Framing"
+      description: "同じ事実を別の枠組みで提示し判断を変える"
+      stage_hint: ["Consideration"]
+      lp_usage: "「1日あたりたった33円」"
+    
+    - id: "PEAK_END"
+      name: "ピークエンド則"
+      theory: "Peak-End Rule"
+      description: "体験の最後を高揚させ総合評価を引き上げる"
+      stage_hint: ["Post_Purchase"]
+      lp_usage: "追伸で感動的なメッセージ"
+    
+    - id: "IN_GROUP"
+      name: "同調バイアス"
+      theory: "In-Group Bias"
+      description: "所属集団の事例で自分ごと化"
+      stage_hint: ["Interest"]
+      lp_usage: "「30代主婦の方に選ばれています」"
+    
+    - id: "BANDWAGON"
+      name: "バンドワゴン"
+      theory: "Bandwagon Effect"
+      description: "多数派に同調する心理で安心感を与える"
+      stage_hint: ["Interest"]
+      lp_usage: "「累計10万人突破」"
+    
+    - id: "HALO"
+      name: "ハロー効果"
+      theory: "Halo Effect"
+      description: "一部の好印象が全体評価に波及"
+      stage_hint: ["Awareness", "Interest"]
+      lp_usage: "著名人との写真、受賞歴"
+    
+    - id: "INSTANT"
+      name: "即時報酬"
+      theory: "Immediate Reward"
+      description: "即得を提示しコンバージョンを刺激"
+      stage_hint: ["Intent"]
+      lp_usage: "「今すぐダウンロード可能」"
+
+  # 追加の心理トリガー（30選）
+  additional:
+    - id: "ZEIGARNIK"
+      name: "ツァイガルニック"
+      description: "未完了タスクが記憶に残る"
+      lp_usage: "「続きはこちら」「ステップ2へ」"
+    
+    - id: "SUNK_COST"
+      name: "サンクコスト"
+      description: "投入コストを惜しみ離脱を防ぐ"
+      lp_usage: "「ここまで読んだあなたなら...」"
+    
+    - id: "GAMIF"
+      name: "ゲーミフィケーション"
+      description: "スコア・バッジで達成感を刺激"
+      lp_usage: "「プログラム修了証発行」"
+    
+    - id: "IKEA"
+      name: "IKEA効果"
+      description: "自作参加で愛着と価格許容度UP"
+      lp_usage: "「一緒に作り上げるプログラム」"
+    
+    - id: "FOOT_DOOR"
+      name: "フットインザドア"
+      description: "小依頼→大依頼へ段階的に要求を拡大"
+      lp_usage: "「まずは無料相談から」"
+    
+    - id: "DOOR_FACE"
+      name: "ドアインザフェイス"
+      description: "大依頼→小依頼で譲歩を引き出す"
+      lp_usage: "「本来100万円のところ→今なら39万円」"
+
+# ============================================================
+# 3. MOL / MOA シナリオ設計
+# ============================================================
+scenario_design:
+  MOA_framework:
+    definition: "Motivation × Opportunity × Ability の3因子を定量化"
+    key_questions:
+      motivation: "行動する十分な動機はあるか？"
+      opportunity: "外的条件（時間・環境）は整っているか？"
+      ability: "必要なスキル・リソースを保有しているか？"
+    
+    design_steps:
+      - "対象ペルソナを特定し、M/O/A各要素を5段階で採点"
+      - "合計が最も低い要素を主障壁に設定"
+      - "主障壁に対応する施策をブレイクダウン"
+      - "A/Bテストで数値改善幅をトラッキング"
+    
+    lp_application:
+      low_motivation: "ベネフィットを強調、損失回避を訴求"
+      low_opportunity: "時短・簡単さを強調"
+      low_ability: "サポート・初心者向けを強調"
+  
+  MOL_framework:
+    definition: "Moment-of-Life：ライフイベントをトリガーにシナリオを構築"
+    design_grid:
+      - "Life_Event（ライフイベント）"
+      - "Emotion_Shift（感情変化）"
+      - "Primary_Need（主要ニーズ）"
+      - "Barrier（障壁）"
+      - "Leverage（てこ入れ策）"
+    
+    example:
+      life_event: "産後復職3ヶ月前"
+      emotion_shift: "期待50% / 不安50%"
+      primary_need: "時短で成果が出る学習法"
+      barrier: "育児による時間制約"
+      leverage: "10分完結 × モバイル完結教材 + 共感コミュニティ"
+
+# ============================================================
+# 4. 心理ステージ別 典型的感情 & ニーズ
+# ============================================================
+emotions_and_needs_by_stage:
+  Unaware:
+    emotions: ["無関心"]
+    needs: ["潜在欲求の認知"]
+    lp_approach: "問題提起で気づかせる"
+  
+  Problem_Aware:
+    emotions: ["モヤモヤ"]
+    needs: ["課題可視化"]
+    lp_approach: "悩みを言語化してあげる"
+  
+  Solution_Aware:
+    emotions: ["期待と懐疑"]
+    needs: ["選択肢比較"]
+    lp_approach: "他の選択肢との違いを明確に"
+  
+  Comparison:
+    emotions: ["不安と損失回避"]
+    needs: ["購入理由の確証"]
+    lp_approach: "証拠・実績・保証で安心させる"
+  
+  Ready_to_Buy:
+    emotions: ["希少性への焦り"]
+    needs: ["価格正当化・保証"]
+    lp_approach: "今買う理由、リスクリバーサル"
+  
+  Post_Purchase:
+    emotions: ["安堵・喜び"]
+    needs: ["成功体験・サポート"]
+    lp_approach: "次のステップを明確に"
+  
+  Loyalty:
+    emotions: ["所属感・優越感"]
+    needs: ["コミュニティ・先行情報"]
+    lp_approach: "VIP感を演出"
+
+# ============================================================
+# 5. 訴求ポイント（フック）テンプレート集
+# ============================================================
+hook_templates:
+  - template: "[痛み]を放置すると[重大損失] — 今すぐ出来る[簡易解決策]とは？"
+    best_stage: ["Problem_Aware", "Comparison"]
+    recommended_triggers: ["LOSS_AVOID", "FRAMING"]
+    example: "肩こりを放置すると慢性頭痛に — 1日5分でできるストレッチとは？"
+  
+  - template: "顧客の92%がまだ知らない[秘匿メリット] — 初公開！"
+    best_stage: ["Interest"]
+    recommended_triggers: ["SOC_PROOF", "SCARCITY"]
+    example: "英語学習者の92%がまだ知らない「聞くだけ」上達法 — 初公開！"
+  
+  - template: "もし[現状の常識]が間違っていたら？ → [逆張りソリューション]"
+    best_stage: ["Solution_Aware", "Comparison"]
+    recommended_triggers: ["CONTRAST", "PRIMING"]
+    example: "もし「運動しないと痩せない」が間違っていたら？ → 食事だけダイエット"
+  
+  - template: "残席あと[数字]名｜[期限]までに申し込んだ方限定[特典]"
+    best_stage: ["Intent", "Ready_to_Buy"]
+    recommended_triggers: ["SCARCITY", "FOMO"]
+    example: "残席あと3名｜今週金曜までに申し込んだ方限定で特別動画プレゼント"
+  
+  - template: "[憧れペルソナ]も愛用 — [権威付け]で選ばれる理由"
+    best_stage: ["Interest", "Consideration"]
+    recommended_triggers: ["AUTHORITY", "IN_GROUP"]
+    example: "トップアスリートも愛用 — スポーツ科学者監修で選ばれる理由"
+  
+  - template: "比較表で一目瞭然！[競合]を超える3つのポイント"
+    best_stage: ["Comparison"]
+    recommended_triggers: ["ANCHOR", "CONTRAST"]
+    example: "比較表で一目瞭然！大手A社を超える3つのポイント"
+
+# ============================================================
+# 6. LP構成 × 心理トリガー マッピング
+# ============================================================
+lp_section_trigger_mapping:
+  ヘッドコピー:
+    purpose: "注意を引き、続きを読ませる"
+    triggers: ["PRIMING", "STORY", "VIVIDNESS"]
+    checklist:
+      - "3秒で自分ごと化できるか"
+      - "続きを読みたくなるか"
+  
+  ストーリー・問題提起:
+    purpose: "共感を得て、問題を認識させる"
+    triggers: ["STORY", "IN_GROUP", "LOSS_AVOID"]
+    checklist:
+      - "悩みを言語化しているか"
+      - "「あるある」と頷けるか"
+  
+  煽り立て・共感:
+    purpose: "問題の深刻さを認識させる"
+    triggers: ["LOSS_AVOID", "FRAMING", "FOMO"]
+    checklist:
+      - "放置のリスクを伝えているか"
+      - "煽りすぎていないか"
+  
+  主張と証拠:
+    purpose: "解決策を提示し、信頼を得る"
+    triggers: ["AUTHORITY", "SOC_PROOF", "CERTAINTY"]
+    checklist:
+      - "なぜ効果があるか説明しているか"
+      - "実績・証拠を示しているか"
+  
+  ブレット:
+    purpose: "商品価値を具体的に伝える"
+    triggers: ["ANCHOR", "FRAMING", "INSTANT"]
+    checklist:
+      - "ベネフィット訴求になっているか"
+      - "各項目が価格以上の価値に見えるか"
+  
+  お客様の声:
+    purpose: "第三者の声で信頼を高める"
+    triggers: ["SOC_PROOF", "BANDWAGON", "IN_GROUP"]
+    checklist:
+      - "Before→Afterが明確か"
+      - "ターゲットと似た属性か"
+  
+  オファー・限定性:
+    purpose: "今買う理由を提示する"
+    triggers: ["SCARCITY", "FOMO", "ANCHOR", "DECOY"]
+    checklist:
+      - "価値を先に伝えてから価格を出しているか"
+      - "限定要素は具体的か"
+  
+  保証:
+    purpose: "リスクを取り除く"
+    triggers: ["CERTAINTY", "ENDOWMENT", "RECIPROC"]
+    checklist:
+      - "リスクリバーサルが明確か"
+      - "自信を示しているか"
+  
+  Q&A:
+    purpose: "残っている疑問を解消する"
+    triggers: ["CERTAINTY", "OSTRICH"]
+    checklist:
+      - "購入を迷う理由を潰しているか"
+      - "よくある質問を網羅しているか"
+  
+  追伸:
+    purpose: "最後の一押し"
+    triggers: ["PEAK_END", "SUNK_COST", "COMMIT"]
+    checklist:
+      - "要点をまとめているか"
+      - "力強いCTAがあるか"
