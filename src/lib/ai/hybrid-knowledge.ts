@@ -199,15 +199,21 @@ export async function hybridGenerate(query: HybridQuery): Promise<HybridResponse
 
   if (query.useCache !== false) {
     const cacheStart = Date.now();
-    cache = await getCurrentCache();
+    try {
+      cache = await getCurrentCache();
 
-    if (!cache) {
-      cache = await createKnowledgeCache({
-        files: STATIC_KNOWLEDGE_FILES,
-      });
+      if (!cache) {
+        cache = await createKnowledgeCache({
+          files: STATIC_KNOWLEDGE_FILES,
+        });
+      }
+
+      cachedTokens = cache?.tokenCount || 0;
+    } catch (cacheError) {
+      console.warn("[hybrid-knowledge] Cache creation failed, continuing without cache:", cacheError);
+      cache = null;
+      cachedTokens = 0;
     }
-
-    cachedTokens = cache?.tokenCount || 0;
     timing.cacheMs = Date.now() - cacheStart;
   }
 

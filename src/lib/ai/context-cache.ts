@@ -162,6 +162,14 @@ export async function createKnowledgeCache(
 `;
 
   try {
+    // コンテンツが空または短すぎる場合はスキップ
+    if (!content || content.length < 1000) {
+      console.warn(`[context-cache] Content too short (${content.length} chars), skipping cache creation`);
+      throw new Error("Content too short for caching (min 1024 tokens required)");
+    }
+
+    console.log(`[context-cache] Creating cache with ${content.length} chars content`);
+
     // Gemini Context Caching API を使用
     // Note: 実際のAPI呼び出しは @google/genai の caching 機能を使用
     // Note: @google/genai の型定義が変更される可能性があるため、実際のAPIに合わせて調整
