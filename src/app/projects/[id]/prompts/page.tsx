@@ -6,15 +6,25 @@
  * 構成からプロンプトを生成・編集
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useWorkflowStore } from "@/stores/workflow-store";
 import { WorkflowNav } from "@/components/workflow";
-import { PromptBuilder } from "@/components/prompts";
+import { PromptBuilder, PromptHistoryPanel } from "@/components/prompts";
 import type { LPStructure } from "@/lib/structure/types";
 import type { GeneratedPrompt } from "@/lib/prompts/types";
 import type { PromptFormat } from "@/lib/workflow/types";
 import { DEFAULT_GLOBAL_RULES } from "@/lib/structure/types";
+import {
+  createPromptHistory,
+  addHistoryEntry,
+  undoHistory,
+  redoHistory,
+  restoreHistoryEntry,
+  loadHistoryFromStorage,
+  saveHistoryToStorage,
+  type PromptHistory,
+} from "@/lib/prompts/history";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, ArrowLeft, AlertCircle } from "lucide-react";
@@ -28,18 +38,78 @@ export default function PromptsPage() {
   // 構成データを取得
   const [structure, setStructure] = useState<LPStructure | null>(null);
   const [prompts, setPrompts] = useState<GeneratedPrompt[]>([]);
+  const [currentFormat, setCurrentFormat] = useState<PromptFormat>("yaml");
+  const [history, setHistory] = useState<PromptHistory>(() => createPromptHistory());
 
   useEffect(() => {
     const savedStructure = getStepData<LPStructure>("structure");
     if (savedStructure) {
       setStructure(savedStructure);
     }
-  }, [getStepData]);
+    // 履歴をロード
+    const savedHistory = loadHistoryFromStorage(projectId);
+    if (savedHistory) {
+      setHistory(savedHistory);
+    }
+  }, [getStepData, projectId]);
+
+  // 履歴を保存
+  const saveHistory = useCallback(
+    (newHistory: PromptHistory) => {
+      setHistory(newHistory);
+      saveHistoryToStorage(newHistory, projectId);
+    },
+    [projectId]
+  );
 
   // プロンプト生成完了ハンドラ
-  const handlePromptsGenerated = (generated: GeneratedPrompt[]) => {
+  const handlePromptsGenerated = (generated: GeneratedPrompt[], format?: PromptFormat) => {
     setPrompts(generated);
     setStepData("prompts", generated);
+    if (format) {
+      setCurrentFormat(format);
+    }
+    // 履歴に追加
+    const newHistory = addHistoryEntry(
+      history,
+      generated,
+      format || currentFormat,
+      "プロンプト生成"
+    );
+    saveHistory(newHistory);
+  };
+
+  // Undo
+  const handleUndo = () => {
+    const result = undoHistory(history);
+    if (result.entry) {
+      setPrompts(result.entry.prompts);
+      setCurrentFormat(result.entry.format);
+      setStepData("prompts", result.entry.prompts);
+    }
+    saveHistory(result.history);
+  };
+
+  // Redo
+  const handleRedo = () => {
+    const result = redoHistory(history);
+    if (result.entry) {
+      setPrompts(result.entry.prompts);
+      setCurrentFormat(result.entry.format);
+      setStepData("prompts", result.entry.prompts);
+    }
+    saveHistory(result.history);
+  };
+
+  // 特定バージョンを復元
+  const handleRestore = (entryId: string) => {
+    const result = restoreHistoryEntry(history, entryId);
+    if (result.entry) {
+      setPrompts(result.entry.prompts);
+      setCurrentFormat(result.entry.format);
+      setStepData("prompts", result.entry.prompts);
+    }
+    saveHistory(result.history);
   };
 
   // エクスポート
@@ -105,27 +175,42 @@ export default function PromptsPage() {
       <WorkflowNav projectId={projectId} />
 
       {/* メインコンテンツ */}
-      <div className="container max-w-4xl mx-auto py-6 px-4">
-        <PromptBuilder
-          structure={effectiveStructure}
-          initialPrompts={prompts}
-          onPromptsGenerated={handlePromptsGenerated}
-          onExport={handleExport}
-        />
+      <div className="container max-w-6xl mx-auto py-6 px-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* 左: プロンプトビルダー */}
+          <div className="lg:col-span-3">
+            <PromptBuilder
+              structure={effectiveStructure}
+              initialPrompts={prompts}
+              onPromptsGenerated={handlePromptsGenerated}
+              onExport={handleExport}
+            />
 
-        {/* ナビゲーションボタン */}
-        <div className="mt-6 flex justify-between">
-          <Button
-            variant="outline"
-            onClick={() => router.push(`/projects/${projectId}/structure`)}
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            構成編集へ戻る
-          </Button>
-          <Button onClick={handleGoToDesign} disabled={prompts.length === 0}>
-            デザイン生成へ
-            <ArrowRight className="w-4 h-4 ml-1" />
-          </Button>
+            {/* ナビゲーションボタン */}
+            <div className="mt-6 flex justify-between">
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/projects/${projectId}/structure`)}
+              >
+                <ArrowLeft className="w-4 h-4 mr-1" />
+                構成編集へ戻る
+              </Button>
+              <Button onClick={handleGoToDesign} disabled={prompts.length === 0}>
+                デザイン生成へ
+                <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+
+          {/* 右: 履歴パネル */}
+          <div className="lg:col-span-1">
+            <PromptHistoryPanel
+              history={history}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              onRestore={handleRestore}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -147,7 +147,7 @@ export interface StructureMetadata {
   industry?: string;
   toneOfVoice?: string;
   version: number;
-  sourceType: "scratch" | "template" | "import" | "swipe";
+  sourceType: "scratch" | "template" | "import" | "swipe" | "ai-generated" | "imported";
   templateId?: string;
 }
 
