@@ -1,0 +1,3757 @@
+[
+  {
+    "label": "fal-ai/SeeDance 1.0 lite i2v",
+    "provider": "fal",
+    "model": "fal-ai/bytedance/seedance/v1/lite/image-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/bytedance/seedance/v1/lite/image-to-video",
+    "reference": "https://fal.ai/models/fal-ai/bytedance/seedance/v1/lite/image-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/bytedance/seedance/v1/lite/image-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          },
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "6",
+            "value": "6"
+          },
+          {
+            "label": "7",
+            "value": "7"
+          },
+          {
+            "label": "8",
+            "value": "8"
+          },
+          {
+            "label": "9",
+            "value": "9"
+          },
+          {
+            "label": "10",
+            "value": "10"
+          },
+          {
+            "label": "11",
+            "value": "11"
+          },
+          {
+            "label": "12",
+            "value": "12"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "21:9",
+            "value": "21:9"
+          },
+          {
+            "label": "16:9",
+            "value": "16:9"
+          },
+          {
+            "label": "4:3",
+            "value": "4:3"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          },
+          {
+            "label": "3:4",
+            "value": "3:4"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          },
+          {
+            "label": "9:21",
+            "value": "9:21"
+          },
+          {
+            "label": "auto",
+            "value": "auto",
+            "default": true
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "480p",
+            "value": "480p"
+          },
+          {
+            "label": "720p",
+            "value": "720p",
+            "default": true
+          },
+          {
+            "label": "1080p",
+            "value": "1080p"
+          }
+        ]
+      },
+      {
+        "key": "camera_fixed",
+        "label": "Camera Fixed",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "image_url",
+        "label": "Input Image",
+        "type": "singleImage"
+      },
+      {
+        "key": "end_image_url",
+        "label": "End Image (Optional)",
+        "type": "singleImage",
+        "optional": true
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Input image is required; uploads over 8MB are auto-resized.",
+      "Optional end_image_url keeps the final pose fixed when provided.",
+      "Set camera_fixed to true to suppress camera motion."
+    ]
+  },
+  {
+    "label": "fal-ai/SeeDance 1.0 lite reference",
+    "provider": "fal",
+    "model": "fal-ai/bytedance/seedance/v1/lite/reference-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/bytedance/seedance/v1/lite/reference-to-video",
+    "reference": "https://fal.ai/models/fal-ai/bytedance/seedance/v1/lite/reference-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/bytedance/seedance/v1/lite/reference-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          },
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "6",
+            "value": "6"
+          },
+          {
+            "label": "7",
+            "value": "7"
+          },
+          {
+            "label": "8",
+            "value": "8"
+          },
+          {
+            "label": "9",
+            "value": "9"
+          },
+          {
+            "label": "10",
+            "value": "10"
+          },
+          {
+            "label": "11",
+            "value": "11"
+          },
+          {
+            "label": "12",
+            "value": "12"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "21:9",
+            "value": "21:9"
+          },
+          {
+            "label": "16:9",
+            "value": "16:9"
+          },
+          {
+            "label": "4:3",
+            "value": "4:3"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          },
+          {
+            "label": "3:4",
+            "value": "3:4"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          },
+          {
+            "label": "9:21",
+            "value": "9:21"
+          },
+          {
+            "label": "auto",
+            "value": "auto",
+            "default": true
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "480p",
+            "value": "480p"
+          },
+          {
+            "label": "720p",
+            "value": "720p",
+            "default": true
+          },
+          {
+            "label": "1080p",
+            "value": "1080p"
+          }
+        ]
+      },
+      {
+        "key": "camera_fixed",
+        "label": "Camera Fixed",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "reference_image_urls",
+        "label": "Reference Images (up to 4)",
+        "type": "multiImages",
+        "max": 4
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Provide 1-4 reference images; larger uploads are auto-resized below 8MB.",
+      "Prompt can stay empty for pure reenactment, but short motion cues improve results.",
+      "Enable camera_fixed to lock framing; leave off to allow automatic camera movement."
+    ]
+  },
+  {
+    "label": "fal-ai/SeeDance 1.0 lite t2v",
+    "provider": "fal",
+    "model": "fal-ai/bytedance/seedance/v1/lite/text-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/bytedance/seedance/v1/lite/text-to-video",
+    "reference": "https://fal.ai/models/fal-ai/bytedance/seedance/v1/lite/text-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/bytedance/seedance/v1/lite/text-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          },
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "6",
+            "value": "6"
+          },
+          {
+            "label": "7",
+            "value": "7"
+          },
+          {
+            "label": "8",
+            "value": "8"
+          },
+          {
+            "label": "9",
+            "value": "9"
+          },
+          {
+            "label": "10",
+            "value": "10"
+          },
+          {
+            "label": "11",
+            "value": "11"
+          },
+          {
+            "label": "12",
+            "value": "12"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "21:9",
+            "value": "21:9"
+          },
+          {
+            "label": "16:9",
+            "value": "16:9",
+            "default": true
+          },
+          {
+            "label": "4:3",
+            "value": "4:3"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          },
+          {
+            "label": "3:4",
+            "value": "3:4"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          },
+          {
+            "label": "9:21",
+            "value": "9:21"
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "480p",
+            "value": "480p"
+          },
+          {
+            "label": "720p",
+            "value": "720p",
+            "default": true
+          },
+          {
+            "label": "1080p",
+            "value": "1080p"
+          }
+        ]
+      },
+      {
+        "key": "camera_fixed",
+        "label": "Camera Fixed",
+        "type": "boolean",
+        "default": false
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Prompt is required; keep descriptions focused on subject, motion, and style.",
+      "Choose duration between 3-12 seconds—longer clips take noticeably longer to render.",
+      "Toggle camera_fixed when you need a static shot; default behaviour allows pans and dolly moves."
+    ]
+  },
+  {
+    "label": "fal-ai/SeeDance 1.0 pro i2v",
+    "provider": "fal",
+    "model": "fal-ai/bytedance/seedance/v1/pro/image-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/bytedance/seedance/v1/pro/image-to-video",
+    "reference": "https://fal.ai/models/fal-ai/bytedance/seedance/v1/pro/image-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/bytedance/seedance/v1/pro/image-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          },
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "6",
+            "value": "6"
+          },
+          {
+            "label": "7",
+            "value": "7"
+          },
+          {
+            "label": "8",
+            "value": "8"
+          },
+          {
+            "label": "9",
+            "value": "9"
+          },
+          {
+            "label": "10",
+            "value": "10"
+          },
+          {
+            "label": "11",
+            "value": "11"
+          },
+          {
+            "label": "12",
+            "value": "12"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "21:9",
+            "value": "21:9"
+          },
+          {
+            "label": "16:9",
+            "value": "16:9"
+          },
+          {
+            "label": "4:3",
+            "value": "4:3"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          },
+          {
+            "label": "3:4",
+            "value": "3:4"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          },
+          {
+            "label": "9:21",
+            "value": "9:21"
+          },
+          {
+            "label": "auto",
+            "value": "auto",
+            "default": true
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "480p",
+            "value": "480p"
+          },
+          {
+            "label": "720p",
+            "value": "720p"
+          },
+          {
+            "label": "1080p",
+            "value": "1080p",
+            "default": true
+          }
+        ]
+      },
+      {
+        "key": "camera_fixed",
+        "label": "Camera Fixed",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "image_url",
+        "label": "Input Image",
+        "type": "singleImage"
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Input Image is mandatory; high-resolution uploads over 8MB are compressed automatically.",
+      "1080p delivers the sharpest output but takes longest; drop to 720p if the queue is busy.",
+      "Use camera_fixed for locked shots; disable it to let the model introduce camera motion."
+    ]
+  },
+  {
+    "label": "fal-ai/SeeDance 1.0 pro t2v",
+    "provider": "fal",
+    "model": "fal-ai/bytedance/seedance/v1/pro/text-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/bytedance/seedance/v1/pro/text-to-video",
+    "reference": "https://fal.ai/models/fal-ai/bytedance/seedance/v1/pro/text-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/bytedance/seedance/v1/pro/text-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          },
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "6",
+            "value": "6"
+          },
+          {
+            "label": "7",
+            "value": "7"
+          },
+          {
+            "label": "8",
+            "value": "8"
+          },
+          {
+            "label": "9",
+            "value": "9"
+          },
+          {
+            "label": "10",
+            "value": "10"
+          },
+          {
+            "label": "11",
+            "value": "11"
+          },
+          {
+            "label": "12",
+            "value": "12"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "21:9",
+            "value": "21:9"
+          },
+          {
+            "label": "16:9",
+            "value": "16:9",
+            "default": true
+          },
+          {
+            "label": "4:3",
+            "value": "4:3"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          },
+          {
+            "label": "3:4",
+            "value": "3:4"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          },
+          {
+            "label": "9:21",
+            "value": "9:21"
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "480p",
+            "value": "480p"
+          },
+          {
+            "label": "720p",
+            "value": "720p"
+          },
+          {
+            "label": "1080p",
+            "value": "1080p",
+            "default": true
+          }
+        ]
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Prompt should outline subject, motion, and camera notes for best fidelity.",
+      "Durations above 8 seconds queue more slowly; start with 5 seconds for quick previews.",
+      "Switch aspect_ratio to match the delivery platform—16:9 fits widescreen, 9:16 fits vertical."
+    ]
+  },
+  {
+    "label": "fal-ai/hailuo-02 std t2v",
+    "provider": "fal",
+    "model": "fal-ai/minimax/hailuo-02/standard/text-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/minimax/hailuo-02/standard/text-to-video",
+    "reference": "https://fal.ai/models/fal-ai/minimax/hailuo-02/standard/text-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/minimax/hailuo-02/standard/text-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "6",
+            "value": "6",
+            "default": true
+          },
+          {
+            "label": "10",
+            "value": "10"
+          }
+        ]
+      },
+      {
+        "key": "prompt_optimizer",
+        "label": "Prompt Optimizer",
+        "type": "boolean",
+        "default": true
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Prompt is compulsory and works best with concise, action-driven language.",
+      "Duration presets (6 s / 10 s) trade render time for longer motion.",
+      "Disable prompt_optimizer if you need the exact text without Minimax adjustments."
+    ]
+  },
+  {
+    "label": "fal-ai/hailuo-02 std i2v",
+    "provider": "fal",
+    "model": "fal-ai/minimax/hailuo-02/standard/image-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/minimax/hailuo-02/standard/image-to-video",
+    "reference": "https://fal.ai/models/fal-ai/minimax/hailuo-02/standard/image-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/minimax/hailuo-02/standard/image-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "6",
+            "value": "6",
+            "default": true
+          },
+          {
+            "label": "10",
+            "value": "10"
+          }
+        ]
+      },
+      {
+        "key": "prompt_optimizer",
+        "label": "Prompt Optimizer",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "512P",
+            "value": "512P"
+          },
+          {
+            "label": "768P",
+            "value": "768P",
+            "default": true
+          }
+        ]
+      },
+      {
+        "key": "image_url",
+        "label": "Input Image",
+        "type": "singleImage"
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Upload a single Input Image; files above 8MB are automatically downscaled.",
+      "Use 768P when you need maximum detail; pick 512P for faster previews.",
+      "Toggle prompt_optimizer off to avoid automatic prompt rewrites."
+    ]
+  },
+  {
+    "label": "fal-ai/hailuo-02 fast i2v",
+    "provider": "fal",
+    "model": "fal-ai/minimax/hailuo-02-fast/image-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/minimax/hailuo-02-fast/image-to-video",
+    "reference": "https://fal.ai/models/fal-ai/minimax/hailuo-02-fast/image-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/minimax/hailuo-02-fast/image-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "6",
+            "value": "6",
+            "default": true
+          },
+          {
+            "label": "10",
+            "value": "10"
+          }
+        ]
+      },
+      {
+        "key": "prompt_optimizer",
+        "label": "Prompt Optimizer",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "image_url",
+        "label": "Input Image",
+        "type": "singleImage"
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Requires an Input Image; drag, drop, or paste it—files over 8MB are auto-resized.",
+      "Fast variant prioritises turnaround over fidelity, so expect softer fine detail.",
+      "Leave prompt_optimizer on for balanced edits, or disable it for literal guidance."
+    ]
+  },
+  {
+    "label": "fal-ai/hailuo-02 pro t2v",
+    "provider": "fal",
+    "model": "fal-ai/minimax/hailuo-02/pro/text-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/minimax/hailuo-02/pro/text-to-video",
+    "reference": "https://fal.ai/models/fal-ai/minimax/hailuo-02/pro/text-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/minimax/hailuo-02/pro/text-to-video/requests",
+    "timeoutSec": 500,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "prompt_optimizer",
+        "label": "Prompt Optimizer",
+        "type": "boolean",
+        "default": true
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Prompt is required and supports detailed cinematic direction.",
+      "Pro tier delivers richer motion but may queue longer than the standard model.",
+      "Keep prompt_optimizer enabled to benefit from Minimax tuning unless verbatim text is critical."
+    ]
+  },
+  {
+    "label": "fal-ai/hailuo-02 pro i2v",
+    "provider": "fal",
+    "model": "fal-ai/minimax/hailuo-02/pro/image-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/minimax/hailuo-02/pro/image-to-video",
+    "reference": "https://fal.ai/models/fal-ai/minimax/hailuo-02/pro/image-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/minimax/hailuo-02/pro/image-to-video/requests",
+    "timeoutSec": 500,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "prompt_optimizer",
+        "label": "Prompt Optimizer",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "image_url",
+        "label": "Input Image",
+        "type": "singleImage"
+      },
+      {
+        "key": "end_image_url",
+        "label": "End Image (Optional)",
+        "type": "singleImage",
+        "optional": true
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Input Image is required; optional end_image_url locks the final pose, and uploads above 8MB are compressed automatically.",
+      "Pro tier preserves fine detail better but takes longer to complete.",
+      "Toggle prompt_optimizer depending on whether you want literal versus assisted prompts."
+    ]
+  },
+  {
+    "label": "fal-ai/Kling 2.5 turbo pro t2v",
+    "provider": "fal",
+    "model": "fal-ai/kling-video/v2.5-turbo/pro/text-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/kling-video/v2.5-turbo/pro/text-to-video",
+    "reference": "https://fal.ai/models/fal-ai/kling-video/v2.5-turbo/pro/text-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/kling-video/v2.5-turbo/pro/text-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "10",
+            "value": "10"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "16:9",
+            "value": "16:9",
+            "default": true
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          }
+        ]
+      },
+      {
+        "key": "negative_prompt",
+        "label": "Negative Prompt(optional)",
+        "type": "text",
+        "ooptional": true
+      },
+      {
+        "key": "cfg_scale",
+        "label": "CFG Scale",
+        "type": "number",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Prompt must cover subject, motion, and camera cues for consistent output.",
+      "Duration options (5 s / 10 s) balance clip length against queue time.",
+      "Adjust CFG Scale (0-1) to control guidance strength; default 0.5 is a good starting point."
+    ]
+  },
+  {
+    "label": "fal-ai/Kling 2.5 turbo pro i2v",
+    "provider": "fal",
+    "model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+    "reference": "https://fal.ai/models/fal-ai/kling-video/v2.5-turbo/pro/image-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/kling-video/v2.5-turbo/pro/image-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "10",
+            "value": "10"
+          }
+        ]
+      },
+      {
+        "key": "negative_prompt",
+        "label": "Negative Prompt(optional)",
+        "type": "text",
+        "ooptional": true
+      },
+      {
+        "key": "cfg_scale",
+        "label": "CFG Scale",
+        "type": "number",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "key": "image_url",
+        "label": "Input Image",
+        "type": "singleImage"
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Provide an Input Image; uploads over 8MB are resized before submission.",
+      "CFG Scale increases adherence to the prompt—raise it if edits feel too loose.",
+      "Negative Prompt is optional but effective for excluding unwanted artefacts."
+    ]
+  },
+  {
+    "label": "fal-ai/Wan2.5 preview t2v",
+    "provider": "fal",
+    "model": "fal-ai/wan-25-preview/text-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/wan-25-preview/text-to-video",
+    "reference": "https://fal.ai/models/fal-ai/wan-25-preview/text-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/wan-25-preview/text-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt(up to 800 characters)",
+        "type": "text",
+        "maxLength": 800
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "16:9",
+            "value": "16:9",
+            "default": true
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "480p",
+            "value": "480p"
+          },
+          {
+            "label": "720p",
+            "value": "720p"
+          },
+          {
+            "label": "1080p",
+            "value": "1080p",
+            "default": true
+          }
+        ]
+      },
+      {
+        "key": "negative_prompt",
+        "label": "Negative Prompt(optional)",
+        "type": "text",
+        "ooptional": true
+      },
+      {
+        "key": "enable_prompt_expansion",
+        "label": "Enable Prompt Expansion",
+        "type": "boolean",
+        "default": true
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Prompt accepts up to 800 characters; lead with the most important directives.",
+      "Resolution defaults to 1080p; choose 720p or 480p for quicker turnaround.",
+      "Disable Enable Prompt Expansion when you need literal adherence to your instructions."
+    ]
+  },
+  {
+    "label": "fal-ai/Wan2.5 preview i2v",
+    "provider": "fal",
+    "model": "fal-ai/wan-25-preview/image-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/wan-25-preview/image-to-video",
+    "reference": "https://fal.ai/models/fal-ai/wan-25-preview/image-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/wan-25-preview/image-to-video/requests",
+    "timeoutSec": 500,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt(up to 800 characters)",
+        "type": "text",
+        "maxLength": 800
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "10",
+            "value": "10"
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "480p",
+            "value": "480p"
+          },
+          {
+            "label": "720p",
+            "value": "720p"
+          },
+          {
+            "label": "1080p",
+            "value": "1080p",
+            "default": true
+          }
+        ]
+      },
+      {
+        "key": "negative_prompt",
+        "label": "Negative Prompt(optional)",
+        "type": "text",
+        "ooptional": true
+      },
+      {
+        "key": "enable_prompt_expansion",
+        "label": "Enable Prompt Expansion",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "image_url",
+        "label": "Input Image",
+        "type": "singleImage"
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Attach an Input Image (over 8MB is auto-resized); prompts still steer motion, lighting, and effects.",
+      "Select 5 s or 10 s duration—longer clips extend processing time.",
+      "Toggle Enable Prompt Expansion off to avoid automatic prompt embellishments."
+    ]
+  },
+  {
+    "label": "fal-ai/google nano-banana t2i",
+    "provider": "fal",
+    "model": "fal-ai/nano-banana",
+    "endpoint": "https://queue.fal.run/fal-ai/nano-banana",
+    "reference": "https://fal.ai/models/fal-ai/nano-banana/api",
+    "request_page": "https://fal.ai/models/fal-ai/nano-banana/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "num_images",
+        "label": "Number of Images",
+        "type": "select",
+        "options": [
+          {
+            "label": "1",
+            "value": "1",
+            "default": true
+          },
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          }
+        ]
+      },
+      {
+        "key": "output_format",
+        "label": "Output Format",
+        "type": "select",
+        "options": [
+          {
+            "label": "jpeg",
+            "value": "jpeg",
+            "default": true
+          },
+          {
+            "label": "png",
+            "value": "png"
+          }
+        ]
+      }
+    ],
+    "output": "image",
+    "referenceNotes": [
+      "Prompt is mandatory and should describe subject, style, and lighting succinctly.",
+      "Generate up to four images per run via Number of Images; more outputs take longer.",
+      "Choose png output for lossless results; jpeg is quicker and lighter for sharing."
+    ]
+  },
+  {
+    "label": "fal-ai/qwen-image-edit-plus",
+    "provider": "fal",
+    "model": "fal-ai/qwen-image-edit-plus",
+    "endpoint": "https://queue.fal.run/fal-ai/qwen-image-edit-plus",
+    "reference": "https://fal.ai/models/fal-ai/qwen-image-edit-plus/api",
+    "request_page": "https://fal.ai/models/fal-ai/qwen-image-edit-plus/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "image_size",
+        "label": "Image Size",
+        "type": "select",
+        "options": [
+          {
+            "label": "Square",
+            "value": "square"
+          },
+          {
+            "label": "Square HD",
+            "value": "square_HD"
+          },
+          {
+            "label": "Portrait 3:4",
+            "value": "portrait_3_4"
+          },
+          {
+            "label": "Portrait 9:16",
+            "value": "portrait_9_16"
+          },
+          {
+            "label": "Landscape 4:3",
+            "value": "landscape_4_3"
+          },
+          {
+            "label": "Landscape 16:9",
+            "value": "landscape_16_9",
+            "default": true
+          }
+        ]
+      },
+      {
+        "key": "num_images",
+        "label": "Number of Images",
+        "type": "select",
+        "options": [
+          {
+            "label": "1",
+            "value": "1",
+            "default": true
+          },
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          }
+        ]
+      },
+      {
+        "key": "image_urls",
+        "label": "Images (up to 3)",
+        "type": "multiImages",
+        "max": 3
+      }
+    ],
+    "output": "image",
+    "referenceNotes": [
+      "Upload up to three Images; each file above 8MB is automatically downscaled.",
+      "Pick an Image Size preset that matches your target aspect ratio.",
+      "Use the prompt to describe desired edits; omit it for minor touch-ups."
+    ]
+  },
+  {
+    "label": "fal-ai/esrgan upscaler",
+    "provider": "fal",
+    "model": "fal-ai/esrgan",
+    "endpoint": "https://queue.fal.run/fal-ai/esrgan",
+    "reference": "https://fal.ai/models/fal-ai/esrgan/api",
+    "request_page": "https://fal.ai/models/fal-ai/esrgan/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "scale",
+        "label": "Scale",
+        "type": "number",
+        "default": 2,
+        "min": 1,
+        "max": 8,
+        "step": 0.1
+      },
+      {
+        "key": "face",
+        "label": "Face",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "model",
+        "label": "Model",
+        "type": "select",
+        "options": [
+          {
+            "label": "RealESRGAN_x4plus",
+            "value": "RealESRGAN_x4plus",
+            "default": true
+          },
+          {
+            "label": "RealESRGAN_x2plus",
+            "value": "RealESRGAN_x2plus"
+          },
+          {
+            "label": "RealESRGAN_x4plus_anime_6B",
+            "value": "RealESRGAN_x4plus_anime_6B"
+          },
+          {
+            "label": "RealESRGAN_x4_v3",
+            "value": "RealESRGAN_x4_v3"
+          },
+          {
+            "label": "RealESRGAN_x4_wdn_v3",
+            "value": "RealESRGAN_x4_wdn_v3"
+          },
+          {
+            "label": "RealESRGAN_x4_anime_v3",
+            "value": "RealESRGAN_x4_anime_v3"
+          }
+        ]
+      },
+      {
+        "key": "image_url",
+        "label": "Input Image",
+        "type": "singleImage"
+      }
+    ],
+    "output": "image",
+    "referenceNotes": [
+      "Input Image is required; sources above 8MB are downscaled before processing.",
+      "Scale ranges from 1x to 8x—higher factors increase processing time.",
+      "Enable Face to prioritise portrait restoration when needed."
+    ]
+  },
+  {
+    "label": "fal-ai/minimax speech-2.5-hd",
+    "provider": "fal",
+    "model": "fal-ai/minimax/preview/speech-2.5-hd",
+    "endpoint": "https://queue.fal.run/fal-ai/minimax/preview/speech-2.5-hd",
+    "reference": "https://fal.ai/models/fal-ai/minimax/preview/speech-2.5-hd/api",
+    "request_page": "https://fal.ai/models/fal-ai/minimax/preview/speech-2.5-hd/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "text",
+        "label": "text",
+        "type": "text"
+      },
+      {
+        "key": "voice_setting",
+        "label": "voice setting",
+        "type": "container",
+        "contents": [
+          {
+            "key": "voice_id",
+            "type": "selectCustomText",
+            "label": "voice id",
+            "options": [
+              {
+                "label": "Japanese_CalmLady",
+                "value": "Japanese_CalmLady",
+                "default": true
+              },
+              {
+                "label": "Japanese_IntellectualSenior",
+                "value": "Japanese_IntellectualSenior"
+              },
+              {
+                "label": "Japanese_DecisivePrincess",
+                "value": "Japanese_DecisivePrincess"
+              },
+              {
+                "label": "Japanese_Whisper_Belle",
+                "value": "Japanese_Whisper_Belle"
+              }
+            ],
+            "customLabel": "Custom",
+            "customPlaceholder": "voice_id を直接入力"
+          },
+          {
+            "key": "speed",
+            "type": "number",
+            "label": "speed",
+            "default": 1,
+            "min": 0.5,
+            "max": 2,
+            "step": 0.1
+          },
+          {
+            "key": "vol",
+            "type": "number",
+            "label": "vol",
+            "default": 1,
+            "min": 0.01,
+            "max": 10,
+            "step": 0.01
+          },
+          {
+            "key": "pitch",
+            "type": "number",
+            "label": "pitch",
+            "default": 0,
+            "min": -12,
+            "max": 10,
+            "step": 1
+          },
+          {
+            "key": "emotion",
+            "type": "select",
+            "label": "emotion",
+            "options": [
+              {
+                "label": "happy",
+                "value": "happy",
+                "default": true
+              },
+              {
+                "label": "sad",
+                "value": "sad"
+              },
+              {
+                "label": "angry",
+                "value": "angry"
+              },
+              {
+                "label": "fearful",
+                "value": "fearful"
+              },
+              {
+                "label": "disgusted",
+                "value": "disgusted"
+              },
+              {
+                "label": "surprised",
+                "value": "surprised"
+              },
+              {
+                "label": "neutral",
+                "value": "neutral"
+              }
+            ]
+          },
+          {
+            "key": "english_normalization",
+            "type": "boolean",
+            "label": "english normalization",
+            "default": false
+          },
+          {
+            "key": "output_format",
+            "label": "Output Format",
+            "type": "select",
+            "hidden": true,
+            "options": [
+              {
+                "label": "hex",
+                "value": "hex",
+                "default": true
+              }
+            ]
+          },
+          {
+            "key": "language_boost",
+            "type": "select",
+            "label": "language boost",
+            "options": [
+              {
+                "label": "Japanese",
+                "value": "Japanese",
+                "default": true
+              },
+              {
+                "label": "English",
+                "value": "English"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "output": "audio",
+    "referenceNotes": [
+      "Text input is required and can include multi-sentence scripts.",
+      "Select a voice_id preset to switch between available Japanese voices.",
+      "Speed, vol, and pitch fine-tune delivery; keep values near defaults for natural speech."
+    ]
+  },
+  {
+    "label": "elevenlabs/multilingual_v2",
+    "provider": "elevenlabs",
+    "model": "eleven_multilingual_v2",
+    "endpoint": "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+    "reference": "https://elevenlabs.io/docs/api-reference/text-to-speech/convert",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "text",
+        "label": "text",
+        "type": "text"
+      },
+      {
+        "key": "voice_id",
+        "type": "selectCustomText",
+        "label": "voice id",
+        "options": [
+          {
+            "label": "Romaco",
+            "value": "KgETZ36CCLD1Cob4xpkv",
+            "default": true
+          },
+          {
+            "label": "kuon",
+            "value": "B8gJV1IhpuegLxdpXFOE"
+          }
+        ],
+        "customLabel": "カスタム",
+        "customPlaceholder": "voice_id を直接入力"
+      },
+      {
+        "key": "model_id",
+        "label": "model_id",
+        "type": "text",
+        "value": "eleven_v3",
+        "hidden": true,
+        "default": "eleven_v3"
+      },
+      {
+        "key": "voice_settings",
+        "label": "Voice Settings",
+        "type": "container",
+        "contents": [
+          {
+            "key": "stability",
+            "type": "number",
+            "label": "stability",
+            "default": 0.5,
+            "min": 0,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "similarity_boost",
+            "type": "number",
+            "label": "similarity boost",
+            "default": 0.75,
+            "min": 0,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "style",
+            "type": "number",
+            "label": "style",
+            "default": 0.3,
+            "min": 0,
+            "max": 2,
+            "step": 0.05
+          },
+          {
+            "key": "use_speaker_boost",
+            "type": "boolean",
+            "label": "use speaker boost",
+            "default": true
+          },
+          {
+            "key": "speed",
+            "type": "number",
+            "label": "speed",
+            "default": 1,
+            "min": 0.7,
+            "max": 1.2,
+            "step": 0.05
+          }
+        ]
+      },
+      {
+        "key": "output_format",
+        "label": "output format",
+        "type": "text",
+        "value": "mp3_44100_128",
+        "hidden": true
+      }
+    ],
+    "output": "audio",
+    "referenceNotes": [
+      "Enter the narration under text; Japanese, English, and other supported languages are auto-detected.",
+      "Pick a voice_id to switch presets; ElevenLabs requires a valid API key via the Settings page.",
+      "Stability, similarity boost, style, speaker boost, and speed map directly to voice_settings; adjust in 0.05 steps for fine control."
+    ]
+  },
+  {
+    "label": "elevenlabs/eleven_v3",
+    "provider": "elevenlabs",
+    "model": "eleven_v3",
+    "endpoint": "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+    "reference": "https://elevenlabs.io/docs/api-reference/text-to-speech/convert",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "text",
+        "label": "text",
+        "type": "text"
+      },
+      {
+        "key": "voice_id",
+        "type": "selectCustomText",
+        "label": "voice id",
+        "options": [
+          {
+            "label": "Romaco",
+            "value": "KgETZ36CCLD1Cob4xpkv",
+            "default": true
+          },
+          {
+            "label": "kuon",
+            "value": "B8gJV1IhpuegLxdpXFOE"
+          }
+        ]
+      },
+      {
+        "key": "model_id",
+        "label": "model_id",
+        "type": "text",
+        "value": "eleven_v3",
+        "hidden": true,
+        "default": "eleven_v3"
+      },
+      {
+        "key": "voice_settings",
+        "label": "Voice Settings",
+        "type": "container",
+        "contents": [
+          {
+            "key": "stability",
+            "type": "number",
+            "label": "stability",
+            "default": 0.5,
+            "min": 0,
+            "max": 1,
+            "step": 0.05
+          },
+          {
+            "key": "similarity_boost",
+            "type": "number",
+            "label": "similarity boost",
+            "default": 0.75,
+            "min": 0,
+            "max": 1,
+            "step": 0.05
+          }
+        ]
+      },
+      {
+        "key": "output_format",
+        "label": "output format",
+        "type": "text",
+        "value": "mp3_44100_128",
+        "hidden": true
+      }
+    ],
+    "output": "audio",
+    "referenceNotes": [
+      "Enter the narration under text; Japanese, English, and other supported languages are auto-detected.",
+      "Pick a voice_id to switch presets; ElevenLabs requires a valid API key via the Settings page.",
+      "Stability, similarity boost, style, speaker boost, and speed map directly to voice_settings; adjust in 0.05 steps for fine control."
+    ]
+  },
+  {
+    "label": "fal-ai/pixverse lipsync",
+    "provider": "fal",
+    "model": "fal-ai/pixverse/lipsync",
+    "endpoint": "https://queue.fal.run/fal-ai/pixverse/lipsync",
+    "reference": "https://fal.ai/models/fal-ai/pixverse/lipsync/api",
+    "request_page": "https://fal.ai/models/fal-ai/pixverse/lipsync/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "video_url",
+        "label": "Input Video",
+        "type": "video"
+      },
+      {
+        "key": "audio_url",
+        "label": "Input Audio",
+        "type": "audio"
+      },
+      {
+        "key": "voice_id",
+        "label": "voice id",
+        "type": "text",
+        "default": "Auto",
+        "hidden": true
+      },
+      {
+        "key": "text",
+        "label": "text",
+        "type": "text",
+        "default": "hello",
+        "hidden": true
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Upload a video file (MP4 recommended); it will be encoded to base64 before submission.",
+      "Upload an audio file (MP3 recommended); the lip sync output will align to this track.",
+      "Public URLs are still accepted, but local uploads no longer require external hosting."
+    ]
+  },
+  {
+    "label": "fal-ai/sora-2 t2v",
+    "provider": "fal",
+    "model": "fal-ai/sora-2/text-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/sora-2/text-to-video",
+    "reference": "https://fal.ai/models/fal-ai/sora-2/text-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/sora-2/text-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "variable_type": "number",
+        "options": [
+          {
+            "label": "4",
+            "value": "4",
+            "default": true
+          },
+          {
+            "label": "8",
+            "value": "8"
+          },
+          {
+            "label": "12",
+            "value": "12"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "16:9",
+            "value": "16:9",
+            "default": true
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "720p",
+            "value": "720p",
+            "default": true
+          }
+        ]
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Prompt text is required; an optional api_key lets you route costs to your own OpenAI account as noted in the fal.ai docs.",
+      "duration only accepts 4, 8, or 12 second clips and should be sent as a numeric value.",
+      "resolution is fixed at 720p and aspect_ratio must be either 16:9 (default) or 9:16."
+    ]
+  },
+  {
+    "label": "fal-ai/sora-2 i2v",
+    "provider": "fal",
+    "model": "fal-ai/sora-2/image-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/sora-2/image-to-video",
+    "reference": "https://fal.ai/models/fal-ai/sora-2/image-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/sora-2/image-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "variable_type": "number",
+        "options": [
+          {
+            "label": "4",
+            "value": "4",
+            "default": true
+          },
+          {
+            "label": "8",
+            "value": "8"
+          },
+          {
+            "label": "12",
+            "value": "12"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "auto",
+            "value": "auto",
+            "default": true
+          },
+          {
+            "label": "16:9",
+            "value": "16:9"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "auto",
+            "value": "auto",
+            "default": true
+          },
+          {
+            "label": "720p",
+            "value": "720p"
+          }
+        ]
+      },
+      {
+        "key": "image_url",
+        "label": "Input Image",
+        "type": "singleImage"
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Provide image_url as a publicly reachable URL or data URI; it is required and becomes the first frame.",
+      "duration is limited to 4, 8, or 12 seconds and should be sent as a number.",
+      "resolution supports auto or 720p, while aspect_ratio can be auto, 16:9, or 9:16."
+    ]
+  },
+  {
+    "label": "fal-ai/sora-2 t2v pro",
+    "provider": "fal",
+    "model": "fal-ai/sora-2/text-to-video/pro",
+    "endpoint": "https://queue.fal.run/fal-ai/sora-2/text-to-video/pro",
+    "reference": "https://fal.ai/models/fal-ai/sora-2/text-to-video/pro/api",
+    "request_page": "https://fal.ai/models/fal-ai/sora-2/text-to-video/pro/requests",
+    "timeoutSec": 1000,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "variable_type": "number",
+        "options": [
+          {
+            "label": "4",
+            "value": "4",
+            "default": true
+          },
+          {
+            "label": "8",
+            "value": "8"
+          },
+          {
+            "label": "12",
+            "value": "12"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "16:9",
+            "value": "16:9",
+            "default": true
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "720p",
+            "value": "720p"
+          },
+          {
+            "label": "1080p",
+            "value": "1080p",
+            "default": true
+          }
+        ]
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Prompt text is required; include api_key when you want OpenAI to bill the request directly.",
+      "duration accepts 4, 8, or 12 seconds and must be numeric.",
+      "resolution offers 720p or 1080p (default) and aspect_ratio allows 16:9 or 9:16."
+    ]
+  },
+  {
+    "label": "fal-ai/sora-2 i2v pro",
+    "provider": "fal",
+    "model": "fal-ai/sora-2/image-to-video/pro",
+    "endpoint": "https://queue.fal.run/fal-ai/sora-2/image-to-video/pro",
+    "reference": "https://fal.ai/models/fal-ai/sora-2/image-to-video/pro/api",
+    "request_page": "https://fal.ai/models/fal-ai/sora-2/image-to-video/pro/requests",
+    "timeoutSec": 1000,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "variable_type": "number",
+        "options": [
+          {
+            "label": "4",
+            "value": "4",
+            "default": true
+          },
+          {
+            "label": "8",
+            "value": "8"
+          },
+          {
+            "label": "12",
+            "value": "12"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "auto",
+            "value": "auto",
+            "default": true
+          },
+          {
+            "label": "16:9",
+            "value": "16:9"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "auto",
+            "value": "auto",
+            "default": true
+          },
+          {
+            "label": "720p",
+            "value": "720p"
+          },
+          {
+            "label": "1080p",
+            "value": "1080p"
+          }
+        ]
+      },
+      {
+        "key": "image_url",
+        "label": "Input Image",
+        "type": "singleImage"
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "image_url must point to the starting frame (public URL or data URI) alongside your prompt.",
+      "duration remains constrained to 4, 8, or 12 seconds and should be provided as a number.",
+      "resolution can be auto, 720p, or 1080p, and aspect_ratio supports auto, 16:9, or 9:16."
+    ]
+  },
+  {
+    "label": "fal-ai/reve t2i",
+    "provider": "fal",
+    "model": "fal-ai/reve/text-to-image",
+    "endpoint": "https://queue.fal.run/fal-ai/reve/text-to-image",
+    "reference": "https://fal.ai/models/fal-ai/reve/text-to-image/api",
+    "request_page": "https://fal.ai/models/fal-ai/reve/text-to-image/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "16:9",
+            "value": "16:9"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          },
+          {
+            "label": "3:2",
+            "value": "3:2",
+            "default": true
+          },
+          {
+            "label": "2:3",
+            "value": "2:3"
+          },
+          {
+            "label": "4:3",
+            "value": "4:3"
+          },
+          {
+            "label": "3:4",
+            "value": "3:4"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          }
+        ]
+      },
+      {
+        "key": "num_images",
+        "label": "Number of Images",
+        "type": "select",
+        "options": [
+          {
+            "label": "1",
+            "value": "1",
+            "default": true
+          },
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          }
+        ]
+      },
+      {
+        "key": "output_format",
+        "label": "Output Format",
+        "type": "select",
+        "options": [
+          {
+            "label": "png",
+            "value": "png",
+            "default": true
+          },
+          {
+            "label": "jpeg",
+            "value": "jpeg"
+          },
+          {
+            "label": "webp",
+            "value": "webp"
+          }
+        ]
+      }
+    ],
+    "output": "image",
+    "referenceNotes": [
+      "Prompt is required; describe subject, style, and lighting succinctly.",
+      "Aspect ratio defaults to 3:2; choose from seven presets to match your composition.",
+      "Generate up to four images per run; more outputs increase processing time."
+    ]
+  },
+  {
+    "label": "fal-ai/reve edit",
+    "provider": "fal",
+    "model": "fal-ai/reve/edit",
+    "endpoint": "https://queue.fal.run/fal-ai/reve/edit",
+    "reference": "https://fal.ai/models/fal-ai/reve/edit/api",
+    "request_page": "https://fal.ai/models/fal-ai/reve/edit/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "image_url",
+        "label": "Input Image",
+        "type": "singleImage"
+      },
+      {
+        "key": "num_images",
+        "label": "Number of Images",
+        "type": "select",
+        "options": [
+          {
+            "label": "1",
+            "value": "1",
+            "default": true
+          },
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          }
+        ]
+      },
+      {
+        "key": "output_format",
+        "label": "Output Format",
+        "type": "select",
+        "options": [
+          {
+            "label": "png",
+            "value": "png",
+            "default": true
+          },
+          {
+            "label": "jpeg",
+            "value": "jpeg"
+          },
+          {
+            "label": "webp",
+            "value": "webp"
+          }
+        ]
+      }
+    ],
+    "output": "image",
+    "referenceNotes": [
+      "Input Image is required; uploads over 10MB are auto-resized.",
+      "Prompt describes how to edit the provided image.",
+      "Generate up to four edited variations per request."
+    ]
+  },
+  {
+    "label": "fal-ai/reve fast edit",
+    "provider": "fal",
+    "model": "fal-ai/reve/fast/edit",
+    "endpoint": "https://queue.fal.run/fal-ai/reve/fast/edit",
+    "reference": "https://fal.ai/models/fal-ai/reve/fast/edit/api",
+    "request_page": "https://fal.ai/models/fal-ai/reve/fast/edit/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "image_url",
+        "label": "Input Image",
+        "type": "singleImage"
+      },
+      {
+        "key": "num_images",
+        "label": "Number of Images",
+        "type": "select",
+        "options": [
+          {
+            "label": "1",
+            "value": "1",
+            "default": true
+          },
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          }
+        ]
+      },
+      {
+        "key": "output_format",
+        "label": "Output Format",
+        "type": "select",
+        "options": [
+          {
+            "label": "png",
+            "value": "png",
+            "default": true
+          },
+          {
+            "label": "jpeg",
+            "value": "jpeg"
+          },
+          {
+            "label": "webp",
+            "value": "webp"
+          }
+        ]
+      }
+    ],
+    "output": "image",
+    "referenceNotes": [
+      "Input Image is required; fast model prioritizes speed over detail.",
+      "Prompt describes the desired edits to apply to the image.",
+      "Generate up to four variations; faster turnaround than standard edit model."
+    ]
+  },
+  {
+    "label": "fal-ai/reve remix",
+    "provider": "fal",
+    "model": "fal-ai/reve/remix",
+    "endpoint": "https://queue.fal.run/fal-ai/reve/remix",
+    "reference": "https://fal.ai/models/fal-ai/reve/remix/api",
+    "request_page": "https://fal.ai/models/fal-ai/reve/remix/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "image_urls",
+        "label": "Reference Images (1-6)",
+        "type": "multiImages",
+        "max": 6
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "16:9",
+            "value": "16:9"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          },
+          {
+            "label": "3:2",
+            "value": "3:2"
+          },
+          {
+            "label": "2:3",
+            "value": "2:3"
+          },
+          {
+            "label": "4:3",
+            "value": "4:3"
+          },
+          {
+            "label": "3:4",
+            "value": "3:4"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          }
+        ]
+      },
+      {
+        "key": "num_images",
+        "label": "Number of Images",
+        "type": "select",
+        "options": [
+          {
+            "label": "1",
+            "value": "1",
+            "default": true
+          },
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          }
+        ]
+      },
+      {
+        "key": "output_format",
+        "label": "Output Format",
+        "type": "select",
+        "options": [
+          {
+            "label": "png",
+            "value": "png",
+            "default": true
+          },
+          {
+            "label": "jpeg",
+            "value": "jpeg"
+          },
+          {
+            "label": "webp",
+            "value": "webp"
+          }
+        ]
+      }
+    ],
+    "output": "image",
+    "referenceNotes": [
+      "Provide 1-6 reference images; each must be less than 10MB.",
+      "Prompt can include XML img tags like <img>0</img> to refer to specific images by index.",
+      "Aspect ratio can be omitted for smart auto-selection by the model."
+    ]
+  },
+  {
+    "label": "fal-ai/reve fast remix",
+    "provider": "fal",
+    "model": "fal-ai/reve/fast/remix",
+    "endpoint": "https://queue.fal.run/fal-ai/reve/fast/remix",
+    "reference": "https://fal.ai/models/fal-ai/reve/fast/remix/api",
+    "request_page": "https://fal.ai/models/fal-ai/reve/fast/remix/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "image_urls",
+        "label": "Reference Images (1-6)",
+        "type": "multiImages",
+        "max": 6
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "16:9",
+            "value": "16:9"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          },
+          {
+            "label": "3:2",
+            "value": "3:2"
+          },
+          {
+            "label": "2:3",
+            "value": "2:3"
+          },
+          {
+            "label": "4:3",
+            "value": "4:3"
+          },
+          {
+            "label": "3:4",
+            "value": "3:4"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          }
+        ]
+      },
+      {
+        "key": "num_images",
+        "label": "Number of Images",
+        "type": "select",
+        "options": [
+          {
+            "label": "1",
+            "value": "1",
+            "default": true
+          },
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          }
+        ]
+      },
+      {
+        "key": "output_format",
+        "label": "Output Format",
+        "type": "select",
+        "options": [
+          {
+            "label": "png",
+            "value": "png",
+            "default": true
+          },
+          {
+            "label": "jpeg",
+            "value": "jpeg"
+          },
+          {
+            "label": "webp",
+            "value": "webp"
+          }
+        ]
+      }
+    ],
+    "output": "image",
+    "referenceNotes": [
+      "Upload 1-6 reference images; fast model prioritizes speed over detail.",
+      "Use XML img tags in prompt to reference specific images by their position.",
+      "Faster processing than standard remix model with similar capabilities."
+    ]
+  },
+  {
+    "label": "fal-ai/nano-banana-pro t2i",
+    "provider": "fal",
+    "model": "fal-ai/nano-banana-pro",
+    "endpoint": "https://queue.fal.run/fal-ai/nano-banana-pro",
+    "reference": "https://fal.ai/models/fal-ai/nano-banana-pro/api",
+    "request_page": "https://fal.ai/models/fal-ai/nano-banana-pro/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "num_images",
+        "label": "Number of Images",
+        "type": "select",
+        "options": [
+          {
+            "label": "1",
+            "value": "1",
+            "default": true
+          },
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "21:9",
+            "value": "21:9"
+          },
+          {
+            "label": "16:9",
+            "value": "16:9"
+          },
+          {
+            "label": "3:2",
+            "value": "3:2"
+          },
+          {
+            "label": "4:3",
+            "value": "4:3"
+          },
+          {
+            "label": "5:4",
+            "value": "5:4"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1",
+            "default": true
+          },
+          {
+            "label": "4:5",
+            "value": "4:5"
+          },
+          {
+            "label": "3:4",
+            "value": "3:4"
+          },
+          {
+            "label": "2:3",
+            "value": "2:3"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "1K",
+            "value": "1K",
+            "default": true
+          },
+          {
+            "label": "2K",
+            "value": "2K"
+          },
+          {
+            "label": "4K",
+            "value": "4K"
+          }
+        ]
+      },
+      {
+        "key": "output_format",
+        "label": "Output Format",
+        "type": "select",
+        "options": [
+          {
+            "label": "png",
+            "value": "png",
+            "default": true
+          },
+          {
+            "label": "jpeg",
+            "value": "jpeg"
+          },
+          {
+            "label": "webp",
+            "value": "webp"
+          }
+        ]
+      }
+    ],
+    "output": "image",
+    "referenceNotes": [
+      "Prompt is required; powered by Gemini 3 Pro Image for high-quality text-to-image generation.",
+      "Resolution options: 1K (default), 2K, or 4K—higher resolutions take longer to render.",
+      "Ten aspect ratio presets available; 1:1 is the default."
+    ]
+  },
+  {
+    "label": "fal-ai/nano-banana-pro edit",
+    "provider": "fal",
+    "model": "fal-ai/nano-banana-pro/edit",
+    "endpoint": "https://queue.fal.run/fal-ai/nano-banana-pro/edit",
+    "reference": "https://fal.ai/models/fal-ai/nano-banana-pro/edit/api",
+    "request_page": "https://fal.ai/models/fal-ai/nano-banana-pro/edit/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "image_urls",
+        "label": "Reference Images",
+        "type": "multiImages"
+      },
+      {
+        "key": "num_images",
+        "label": "Number of Images",
+        "type": "select",
+        "options": [
+          {
+            "label": "1",
+            "value": "1",
+            "default": true
+          },
+          {
+            "label": "2",
+            "value": "2"
+          },
+          {
+            "label": "3",
+            "value": "3"
+          },
+          {
+            "label": "4",
+            "value": "4"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "auto",
+            "value": "auto",
+            "default": true
+          },
+          {
+            "label": "21:9",
+            "value": "21:9"
+          },
+          {
+            "label": "16:9",
+            "value": "16:9"
+          },
+          {
+            "label": "3:2",
+            "value": "3:2"
+          },
+          {
+            "label": "4:3",
+            "value": "4:3"
+          },
+          {
+            "label": "5:4",
+            "value": "5:4"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          },
+          {
+            "label": "4:5",
+            "value": "4:5"
+          },
+          {
+            "label": "3:4",
+            "value": "3:4"
+          },
+          {
+            "label": "2:3",
+            "value": "2:3"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "1K",
+            "value": "1K",
+            "default": true
+          },
+          {
+            "label": "2K",
+            "value": "2K"
+          },
+          {
+            "label": "4K",
+            "value": "4K"
+          }
+        ]
+      },
+      {
+        "key": "output_format",
+        "label": "Output Format",
+        "type": "select",
+        "options": [
+          {
+            "label": "png",
+            "value": "png",
+            "default": true
+          },
+          {
+            "label": "jpeg",
+            "value": "jpeg"
+          },
+          {
+            "label": "webp",
+            "value": "webp"
+          }
+        ]
+      }
+    ],
+    "output": "image",
+    "referenceNotes": [
+      "Provide one or more reference images via image_urls for image-to-image editing.",
+      "Prompt describes the editing instructions; powered by Gemini 3 Pro Image.",
+      "Aspect ratio defaults to auto; resolution offers 1K, 2K, or 4K options."
+    ]
+  },
+  {
+    "label": "fal-ai/Kling O1 i2v",
+    "provider": "fal",
+    "model": "fal-ai/kling-video/o1/image-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/kling-video/o1/image-to-video",
+    "reference": "https://fal.ai/models/fal-ai/kling-video/o1/image-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/kling-video/o1/image-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "10",
+            "value": "10"
+          }
+        ]
+      },
+      {
+        "key": "start_image_url",
+        "label": "Start Image",
+        "type": "singleImage"
+      },
+      {
+        "key": "end_image_url",
+        "label": "End Image (Optional)",
+        "type": "singleImage",
+        "optional": true
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Start Image is required and becomes the first frame of the video.",
+      "Optional End Image creates a smooth transition between the two frames.",
+      "Use @Image1 to reference start frame and @Image2 to reference end frame in prompt."
+    ]
+  },
+  {
+    "label": "fal-ai/Kling O1 ref2v",
+    "provider": "fal",
+    "model": "fal-ai/kling-video/o1/reference-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/kling-video/o1/reference-to-video",
+    "reference": "https://fal.ai/models/fal-ai/kling-video/o1/reference-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/kling-video/o1/reference-to-video/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "10",
+            "value": "10"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "16:9",
+            "value": "16:9",
+            "default": true
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          }
+        ]
+      },
+      {
+        "key": "image_urls",
+        "label": "Reference Images (Optional)",
+        "type": "multiImages",
+        "optional": true,
+        "max": 7
+      },
+      {
+        "key": "elements",
+        "label": "Elements (Optional)",
+        "type": "elements",
+        "optional": true
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Provide reference images for style/appearance; reference in prompt as @Image1, @Image2, etc.",
+      "Add elements (characters/objects) to include in video; reference in prompt as @Element1, @Element2, etc.",
+      "Maximum 7 total items (elements + reference images)."
+    ]
+  },
+  {
+    "label": "fal-ai/Kling O1 v2v edit",
+    "provider": "fal",
+    "model": "fal-ai/kling-video/o1/video-to-video/edit",
+    "endpoint": "https://queue.fal.run/fal-ai/kling-video/o1/video-to-video/edit",
+    "reference": "https://fal.ai/models/fal-ai/kling-video/o1/video-to-video/edit/api",
+    "request_page": "https://fal.ai/models/fal-ai/kling-video/o1/video-to-video/edit/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "video_url",
+        "label": "Input Video",
+        "type": "video"
+      },
+      {
+        "key": "keep_audio",
+        "label": "Keep Audio",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "image_urls",
+        "label": "Reference Images (Optional)",
+        "type": "multiImages",
+        "optional": true,
+        "max": 4
+      },
+      {
+        "key": "elements",
+        "label": "Elements (Optional)",
+        "type": "elements",
+        "optional": true
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Upload a video file (MP4/MOV, 3-10 seconds, max 200MB).",
+      "Use @Element1, @Element2 to reference elements and @Image1, @Image2 to reference images in prompt.",
+      "Maximum 4 total items (elements + reference images) when using video."
+    ]
+  },
+  {
+    "label": "fal-ai/Kling O1 v2v ref",
+    "provider": "fal",
+    "model": "fal-ai/kling-video/o1/video-to-video/reference",
+    "endpoint": "https://queue.fal.run/fal-ai/kling-video/o1/video-to-video/reference",
+    "reference": "https://fal.ai/models/fal-ai/kling-video/o1/video-to-video/reference/api",
+    "request_page": "https://fal.ai/models/fal-ai/kling-video/o1/video-to-video/reference/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "video_url",
+        "label": "Input Video",
+        "type": "video"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "10",
+            "value": "10"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "auto",
+            "value": "auto",
+            "default": true
+          },
+          {
+            "label": "16:9",
+            "value": "16:9"
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          }
+        ]
+      },
+      {
+        "key": "keep_audio",
+        "label": "Keep Audio",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "image_urls",
+        "label": "Reference Images (Optional)",
+        "type": "multiImages",
+        "optional": true,
+        "max": 4
+      },
+      {
+        "key": "elements",
+        "label": "Elements (Optional)",
+        "type": "elements",
+        "optional": true
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Upload reference video (MP4/MOV, 3-10 seconds, max 200MB) to generate new video based on it.",
+      "Use @Element1, @Element2 to reference elements and @Image1, @Image2 to reference images.",
+      "Aspect ratio can be auto-detected from input video or manually specified."
+    ]
+  },
+  {
+    "label": "fal-ai/Seedream 4.5 edit",
+    "provider": "fal",
+    "model": "fal-ai/bytedance/seedream/v4.5/edit",
+    "endpoint": "https://queue.fal.run/fal-ai/bytedance/seedream/v4.5/edit",
+    "reference": "https://fal.ai/models/fal-ai/bytedance/seedream/v4.5/edit/api",
+    "request_page": "https://fal.ai/models/fal-ai/bytedance/seedream/v4.5/edit/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "image_urls",
+        "label": "Input Images (1-10)",
+        "type": "multiImages",
+        "max": 10
+      },
+      {
+        "key": "image_size",
+        "label": "Image Size",
+        "type": "select",
+        "options": [
+          {
+            "label": "Square HD",
+            "value": "square_hd",
+            "default": true
+          },
+          {
+            "label": "Square",
+            "value": "square"
+          },
+          {
+            "label": "Portrait 4:3",
+            "value": "portrait_4_3"
+          },
+          {
+            "label": "Portrait 16:9",
+            "value": "portrait_16_9"
+          },
+          {
+            "label": "Landscape 4:3",
+            "value": "landscape_4_3"
+          },
+          {
+            "label": "Landscape 16:9",
+            "value": "landscape_16_9"
+          },
+          {
+            "label": "Auto 2K",
+            "value": "auto_2K"
+          },
+          {
+            "label": "Auto 4K",
+            "value": "auto_4K"
+          }
+        ]
+      },
+      {
+        "key": "num_images",
+        "label": "Number of Images",
+        "type": "number",
+        "default": 1,
+        "min": 1,
+        "max": 4,
+        "step": 1
+      },
+      {
+        "key": "max_images",
+        "label": "Max Images per Generation",
+        "type": "number",
+        "default": 1,
+        "min": 1,
+        "max": 4,
+        "step": 1
+      },
+      {
+        "key": "enable_safety_checker",
+        "label": "Enable Safety Checker",
+        "type": "boolean",
+        "default": true
+      }
+    ],
+    "output": "image",
+    "referenceNotes": [
+      "Upload 1-10 input images to edit based on your prompt.",
+      "Reference images in your prompt as 'Figure 1', 'Figure 2', etc.",
+      "Total images (input + output) must not exceed 15."
+    ]
+  },
+  {
+    "label": "fal-ai/Seedream 4.5 t2i",
+    "provider": "fal",
+    "model": "fal-ai/bytedance/seedream/v4.5/text-to-image",
+    "endpoint": "https://queue.fal.run/fal-ai/bytedance/seedream/v4.5/text-to-image",
+    "reference": "https://fal.ai/models/fal-ai/bytedance/seedream/v4.5/text-to-image/api",
+    "request_page": "https://fal.ai/models/fal-ai/bytedance/seedream/v4.5/text-to-image/requests",
+    "timeoutSec": 300,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "image_size",
+        "label": "Image Size",
+        "type": "select",
+        "options": [
+          {
+            "label": "Square HD",
+            "value": "square_hd",
+            "default": true
+          },
+          {
+            "label": "Square",
+            "value": "square"
+          },
+          {
+            "label": "Portrait 4:3",
+            "value": "portrait_4_3"
+          },
+          {
+            "label": "Portrait 16:9",
+            "value": "portrait_16_9"
+          },
+          {
+            "label": "Landscape 4:3",
+            "value": "landscape_4_3"
+          },
+          {
+            "label": "Landscape 16:9",
+            "value": "landscape_16_9"
+          },
+          {
+            "label": "Auto 2K",
+            "value": "auto_2K"
+          },
+          {
+            "label": "Auto 4K",
+            "value": "auto_4K"
+          }
+        ]
+      },
+      {
+        "key": "num_images",
+        "label": "Number of Images",
+        "type": "number",
+        "default": 1,
+        "min": 1,
+        "max": 4,
+        "step": 1
+      },
+      {
+        "key": "max_images",
+        "label": "Max Images per Generation",
+        "type": "number",
+        "default": 1,
+        "min": 1,
+        "max": 4,
+        "step": 1
+      },
+      {
+        "key": "enable_safety_checker",
+        "label": "Enable Safety Checker",
+        "type": "boolean",
+        "default": true
+      }
+    ],
+    "output": "image",
+    "referenceNotes": [
+      "Generate images from text prompts using Bytedance's Seedream 4.5 model.",
+      "Supports various aspect ratios and resolutions up to 4K.",
+      "Total images generated will be between num_images and max_images*num_images."
+    ]
+  },
+  {
+    "label": "fal-ai/Kling v2.6 pro i2v",
+    "provider": "fal",
+    "model": "fal-ai/kling-video/v2.6/pro/image-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/kling-video/v2.6/pro/image-to-video",
+    "reference": "https://fal.ai/models/fal-ai/kling-video/v2.6/pro/image-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/kling-video/v2.6/pro/image-to-video/requests",
+    "timeoutSec": 600,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "image_url",
+        "label": "Input Image",
+        "type": "singleImage"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "10",
+            "value": "10"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "16:9",
+            "value": "16:9",
+            "default": true
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          }
+        ]
+      },
+      {
+        "key": "cfg_scale",
+        "label": "CFG Scale",
+        "type": "number",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "key": "negative_prompt",
+        "label": "Negative Prompt",
+        "type": "text",
+        "optional": true
+      },
+      {
+        "key": "generate_audio",
+        "label": "Generate Audio",
+        "type": "boolean",
+        "default": true
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Generate video from an input image using Kling v2.6 pro model.",
+      "Supports 5 or 10 second durations with multiple aspect ratios.",
+      "Enable 'Generate Audio' for AI-generated Chinese and English voice output.",
+      "Default negative prompt: 'blur, distort, and low quality'."
+    ]
+  },
+  {
+    "label": "fal-ai/Kling v2.6 pro t2v",
+    "provider": "fal",
+    "model": "fal-ai/kling-video/v2.6/pro/text-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/kling-video/v2.6/pro/text-to-video",
+    "reference": "https://fal.ai/models/fal-ai/kling-video/v2.6/pro/text-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/kling-video/v2.6/pro/text-to-video/requests",
+    "timeoutSec": 600,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "10",
+            "value": "10"
+          }
+        ]
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "16:9",
+            "value": "16:9",
+            "default": true
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          }
+        ]
+      },
+      {
+        "key": "cfg_scale",
+        "label": "CFG Scale",
+        "type": "number",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.1
+      },
+      {
+        "key": "negative_prompt",
+        "label": "Negative Prompt",
+        "type": "text",
+        "optional": true
+      },
+      {
+        "key": "generate_audio",
+        "label": "Generate Audio",
+        "type": "boolean",
+        "default": true
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Generate video from text prompt using Kling v2.6 pro model.",
+      "Supports 5 or 10 second durations with multiple aspect ratios.",
+      "Enable 'Generate Audio' for AI-generated Chinese and English voice output.",
+      "Default negative prompt: 'blur, distort, and low quality'."
+    ]
+  },
+  {
+    "label": "fal-ai/Pixverse v5.5 i2v",
+    "provider": "fal",
+    "model": "fal-ai/pixverse/v5.5/image-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/pixverse/v5.5/image-to-video",
+    "reference": "https://fal.ai/models/fal-ai/pixverse/v5.5/image-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/pixverse/v5.5/image-to-video/requests",
+    "timeoutSec": 600,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "image_url",
+        "label": "Input Image",
+        "type": "singleImage"
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "16:9",
+            "value": "16:9",
+            "default": true
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "720p",
+            "value": "720p",
+            "default": true
+          },
+          {
+            "label": "1080p",
+            "value": "1080p"
+          },
+          {
+            "label": "360p",
+            "value": "360p"
+          },
+          {
+            "label": "540p",
+            "value": "540p"
+          }
+        ]
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "8",
+            "value": "8"
+          },
+          {
+            "label": "10",
+            "value": "10"
+          }
+        ]
+      },
+      {
+        "key": "style",
+        "label": "Style (Optional)",
+        "type": "select",
+        "optional": true,
+        "options": [
+          {
+            "label": "None",
+            "value": "",
+            "default": true
+          },
+          {
+            "label": "Anime",
+            "value": "anime"
+          },
+          {
+            "label": "3D Animation",
+            "value": "3d_animation"
+          },
+          {
+            "label": "Clay",
+            "value": "clay"
+          },
+          {
+            "label": "Comic",
+            "value": "comic"
+          },
+          {
+            "label": "Cyberpunk",
+            "value": "cyberpunk"
+          }
+        ]
+      },
+      {
+        "key": "negative_prompt",
+        "label": "Negative Prompt",
+        "type": "text",
+        "optional": true
+      },
+      {
+        "key": "generate_audio_switch",
+        "label": "Generate Audio (BGM/SFX/Dialogue)",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "generate_multi_clip_switch",
+        "label": "Generate Multi-Clip",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "thinking_type",
+        "label": "Thinking Type (Prompt Optimization)",
+        "type": "select",
+        "options": [
+          {
+            "label": "Auto",
+            "value": "auto",
+            "default": true
+          },
+          {
+            "label": "Enabled",
+            "value": "enabled"
+          },
+          {
+            "label": "Disabled",
+            "value": "disabled"
+          }
+        ]
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Generate video from input image using Pixverse v5.5 model.",
+      "Supports various resolutions (360p-1080p) and durations (5-10 seconds).",
+      "Enable 'Generate Audio' for BGM, sound effects, and dialogue.",
+      "Multi-clip mode creates dynamic camera angle changes.",
+      "Thinking type optimizes prompts automatically when enabled."
+    ]
+  },
+  {
+    "label": "fal-ai/Pixverse v5.5 t2v",
+    "provider": "fal",
+    "model": "fal-ai/pixverse/v5.5/text-to-video",
+    "endpoint": "https://queue.fal.run/fal-ai/pixverse/v5.5/text-to-video",
+    "reference": "https://fal.ai/models/fal-ai/pixverse/v5.5/text-to-video/api",
+    "request_page": "https://fal.ai/models/fal-ai/pixverse/v5.5/text-to-video/requests",
+    "timeoutSec": 600,
+    "inputs": [
+      {
+        "key": "prompt",
+        "label": "Prompt",
+        "type": "text"
+      },
+      {
+        "key": "aspect_ratio",
+        "label": "Aspect Ratio",
+        "type": "select",
+        "options": [
+          {
+            "label": "16:9",
+            "value": "16:9",
+            "default": true
+          },
+          {
+            "label": "9:16",
+            "value": "9:16"
+          },
+          {
+            "label": "1:1",
+            "value": "1:1"
+          }
+        ]
+      },
+      {
+        "key": "resolution",
+        "label": "Resolution",
+        "type": "select",
+        "options": [
+          {
+            "label": "720p",
+            "value": "720p",
+            "default": true
+          },
+          {
+            "label": "1080p",
+            "value": "1080p"
+          },
+          {
+            "label": "360p",
+            "value": "360p"
+          },
+          {
+            "label": "540p",
+            "value": "540p"
+          }
+        ]
+      },
+      {
+        "key": "duration",
+        "label": "Duration (sec)",
+        "type": "select",
+        "options": [
+          {
+            "label": "5",
+            "value": "5",
+            "default": true
+          },
+          {
+            "label": "8",
+            "value": "8"
+          },
+          {
+            "label": "10",
+            "value": "10"
+          }
+        ]
+      },
+      {
+        "key": "style",
+        "label": "Style (Optional)",
+        "type": "select",
+        "optional": true,
+        "options": [
+          {
+            "label": "None",
+            "value": "",
+            "default": true
+          },
+          {
+            "label": "Anime",
+            "value": "anime"
+          },
+          {
+            "label": "3D Animation",
+            "value": "3d_animation"
+          },
+          {
+            "label": "Clay",
+            "value": "clay"
+          },
+          {
+            "label": "Comic",
+            "value": "comic"
+          },
+          {
+            "label": "Cyberpunk",
+            "value": "cyberpunk"
+          }
+        ]
+      },
+      {
+        "key": "negative_prompt",
+        "label": "Negative Prompt",
+        "type": "text",
+        "optional": true
+      },
+      {
+        "key": "generate_audio_switch",
+        "label": "Generate Audio (BGM/SFX/Dialogue)",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "generate_multi_clip_switch",
+        "label": "Generate Multi-Clip",
+        "type": "boolean",
+        "default": false
+      },
+      {
+        "key": "thinking_type",
+        "label": "Thinking Type (Prompt Optimization)",
+        "type": "select",
+        "options": [
+          {
+            "label": "Auto",
+            "value": "auto",
+            "default": true
+          },
+          {
+            "label": "Enabled",
+            "value": "enabled"
+          },
+          {
+            "label": "Disabled",
+            "value": "disabled"
+          }
+        ]
+      }
+    ],
+    "output": "video",
+    "referenceNotes": [
+      "Generate video from text prompt using Pixverse v5.5 model.",
+      "Supports various resolutions (360p-1080p) and durations (5-10 seconds).",
+      "Enable 'Generate Audio' for BGM, sound effects, and dialogue.",
+      "Multi-clip mode creates dynamic camera angle changes.",
+      "Thinking type optimizes prompts automatically when enabled."
+    ]
+  }
+]

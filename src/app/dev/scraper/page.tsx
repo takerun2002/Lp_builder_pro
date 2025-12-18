@@ -177,7 +177,7 @@ export default function ScraperPage() {
     const items = e.clipboardData?.items;
     if (!items) return;
 
-    for (const item of items) {
+    for (const item of Array.from(items)) {
       if (item.type.startsWith("image/")) {
         const file = item.getAsFile();
         if (file) {
@@ -251,9 +251,14 @@ export default function ScraperPage() {
               URLからフルページ取得 or スクリーンショットからテキスト抽出
             </p>
           </div>
-          <Link href="/">
-            <Button variant="outline" size="sm">← ホーム</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/dev/lp-ocr">
+              <Button variant="default" size="sm">⚡ 並列OCR版</Button>
+            </Link>
+            <Link href="/">
+              <Button variant="outline" size="sm">← ホーム</Button>
+            </Link>
+          </div>
         </div>
 
         {/* Mode Switch */}

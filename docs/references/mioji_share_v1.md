@@ -61,3 +61,5 @@ PlaywrightキャプチャとGemini OCRそれぞれの同時実行数を **別々
 
 
 
+
+

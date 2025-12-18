@@ -6,12 +6,15 @@
  */
 
 import { getGeminiClient } from "@/lib/ai/gemini";
+import { hybridGenerate, getHybridStats } from "@/lib/ai/hybrid-knowledge";
+import { getStorage } from "@/lib/storage/hybrid-storage";
 import { scrapeInfotopRanking, scrapeInfotopRankingWithAnalysis, extractPatterns } from "./scrapers/infotop";
 import { searchCompetitorLPs, extractCommonPatterns, type EnhancedCompetitorLPResult } from "./scrapers/competitor";
 import { analyzeCompetitorAds, type MetaAdAnalysis } from "./scrapers/meta-ads";
-import { searchChiebukuro, analyzeChiebukuro, type ChiebukuroAnalysis } from "./scrapers/yahoo-chiebukuro";
-import { searchAmazonBooks, analyzeAmazonBooks, type AmazonBookAnalysis } from "./scrapers/amazon-books";
-import { searchYouTube, analyzeYouTube, type YouTubeAnalysis } from "./scrapers/youtube";
+import { analyzeChiebukuro, type ChiebukuroAnalysis } from "./scrapers/yahoo-chiebukuro";
+import { analyzeAmazonBooks, type AmazonBookAnalysis } from "./scrapers/amazon-books";
+import { analyzeYouTube, type YouTubeAnalysis } from "./scrapers/youtube";
+import { executeSnsResearch, toSNSTrendResult, type SnsResearchResult } from "./scrapers/sns-scraper";
 import type {
   ResearchContext,
   ResearchResult,
@@ -55,6 +58,10 @@ export interface EnhancedResearchResult extends ResearchResult {
   chiebukuroAnalysis?: ChiebukuroAnalysis;
   amazonBooksAnalysis?: AmazonBookAnalysis;
   youtubeAnalysis?: YouTubeAnalysis;
+  // SNS個別結果
+  snsXResult?: SnsResearchResult;
+  snsInstagramResult?: SnsResearchResult;
+  snsTiktokResult?: SnsResearchResult;
 }
 
 /**
@@ -71,7 +78,7 @@ export async function runResearch(
     id: `research-${Date.now()}`,
     context,
     status: "running",
-    progress: createInitialProgress(options),
+    progress: createInitialProgress(options, context),
     createdAt: new Date().toISOString(),
   };
 
@@ -94,7 +101,7 @@ export async function runResearch(
     const dataCollectionPromises: Promise<void>[] = [];
 
     // Infotop分析
-    if (options?.includeInfotop !== false && context.searchConfig.sources.includes("infotop")) {
+    if (context.searchConfig.sources.includes("infotop")) {
       dataCollectionPromises.push(
         (async () => {
           updateProgress("infotop", "running");
@@ -125,7 +132,7 @@ export async function runResearch(
     }
 
     // 競合LP分析
-    if (options?.includeCompetitor !== false && context.searchConfig.sources.includes("competitor")) {
+    if (context.searchConfig.sources.includes("competitor")) {
       dataCollectionPromises.push(
         (async () => {
           updateProgress("competitor", "running");
@@ -133,6 +140,7 @@ export async function runResearch(
             result.competitorResults = await searchCompetitorLPs(context, {
               limit: 5,
               useAI,
+              genre: context.genre,
             });
             updateProgress("competitor", "completed");
           } catch (err) {
@@ -144,7 +152,7 @@ export async function runResearch(
     }
 
     // Meta広告分析
-    if (options?.includeMetaAds && context.searchConfig.sources.includes("ads")) {
+    if (context.searchConfig.sources.includes("ads")) {
       dataCollectionPromises.push(
         (async () => {
           updateProgress("ads", "running");
@@ -182,7 +190,7 @@ export async function runResearch(
     }
 
     // Yahoo知恵袋分析
-    if (options?.includeChiebukuro && context.searchConfig.sources.includes("chiebukuro")) {
+    if (context.searchConfig.sources.includes("chiebukuro")) {
       dataCollectionPromises.push(
         (async () => {
           updateProgress("chiebukuro", "running");
@@ -194,17 +202,14 @@ export async function runResearch(
               context.target.problems,
             ].filter(Boolean).join(" ");
 
-            const chiebukuroResults = await searchChiebukuro(searchKeywords, {
+            // analyzeChiebukuroは内部でsearchChiebukuroを呼び出す
+            result.chiebukuroAnalysis = await analyzeChiebukuro({
+              keyword: searchKeywords,
               limit: 20,
               useAI,
             });
 
-            result.chiebukuroAnalysis = await analyzeChiebukuro(chiebukuroResults, {
-              genre: context.genre,
-              useAI,
-            });
-
-            console.log(`[orchestrator] Chiebukuro: found ${chiebukuroResults.length} questions`);
+            console.log(`[orchestrator] Chiebukuro: found ${result.chiebukuroAnalysis?.questions?.length || 0} questions`);
             updateProgress("chiebukuro", "completed");
           } catch (err) {
             console.error("[orchestrator] Chiebukuro error:", err);
@@ -215,7 +220,7 @@ export async function runResearch(
     }
 
     // Amazon書籍分析
-    if (options?.includeAmazonBooks && context.searchConfig.sources.includes("amazon_books")) {
+    if (context.searchConfig.sources.includes("amazon_books")) {
       dataCollectionPromises.push(
         (async () => {
           updateProgress("amazon_books", "running");
@@ -225,17 +230,13 @@ export async function runResearch(
               context.subGenre,
             ].filter(Boolean).join(" ");
 
-            const bookResults = await searchAmazonBooks(searchKeywords, {
+            result.amazonBooksAnalysis = await analyzeAmazonBooks({
+              keyword: searchKeywords,
               limit: 20,
               useAI,
             });
 
-            result.amazonBooksAnalysis = await analyzeAmazonBooks(bookResults, {
-              genre: context.genre,
-              useAI,
-            });
-
-            console.log(`[orchestrator] Amazon Books: found ${bookResults.length} books`);
+            console.log(`[orchestrator] Amazon Books: found ${result.amazonBooksAnalysis?.insights?.totalBooks || 0} books`);
             updateProgress("amazon_books", "completed");
           } catch (err) {
             console.error("[orchestrator] Amazon Books error:", err);
@@ -246,7 +247,7 @@ export async function runResearch(
     }
 
     // YouTube分析
-    if (options?.includeYouTube && context.searchConfig.sources.includes("youtube")) {
+    if (context.searchConfig.sources.includes("youtube")) {
       dataCollectionPromises.push(
         (async () => {
           updateProgress("youtube", "running");
@@ -256,21 +257,113 @@ export async function runResearch(
               context.subGenre,
             ].filter(Boolean).join(" ");
 
-            const videoResults = await searchYouTube(searchKeywords, {
+            result.youtubeAnalysis = await analyzeYouTube({
+              keyword: searchKeywords,
               limit: 20,
               useAI,
             });
 
-            result.youtubeAnalysis = await analyzeYouTube(videoResults, {
-              genre: context.genre,
-              useAI,
-            });
-
-            console.log(`[orchestrator] YouTube: found ${videoResults.length} videos`);
+            console.log(`[orchestrator] YouTube: found ${result.youtubeAnalysis?.insights?.totalVideos || 0} videos`);
             updateProgress("youtube", "completed");
           } catch (err) {
             console.error("[orchestrator] YouTube error:", err);
             updateProgress("youtube", "failed");
+          }
+        })()
+      );
+    }
+
+    // SNS X (Twitter) 分析
+    if (context.searchConfig.sources.includes("sns_x")) {
+      dataCollectionPromises.push(
+        (async () => {
+          updateProgress("sns_x", "running");
+          try {
+            const searchKeywords = context.projectName || context.genre;
+            result.snsXResult = await executeSnsResearch({
+              keyword: searchKeywords,
+              platforms: ["x"],
+              limit: 50,
+              analyzeWithAI: useAI,
+            });
+
+            // 既存のsnsResultsにも統合
+            if (result.snsXResult) {
+              result.snsResults = result.snsResults || { hashtags: [], topics: [], influencers: [] };
+              const xResult = toSNSTrendResult(result.snsXResult);
+              result.snsResults.hashtags.push(...xResult.hashtags);
+              result.snsResults.topics.push(...xResult.topics);
+              result.snsResults.influencers.push(...xResult.influencers);
+            }
+
+            console.log(`[orchestrator] X: found ${result.snsXResult?.xData?.tweets?.length || 0} tweets`);
+            updateProgress("sns_x", "completed");
+          } catch (err) {
+            console.error("[orchestrator] X error:", err);
+            updateProgress("sns_x", "failed");
+          }
+        })()
+      );
+    }
+
+    // SNS Instagram 分析
+    if (context.searchConfig.sources.includes("sns_instagram")) {
+      dataCollectionPromises.push(
+        (async () => {
+          updateProgress("sns_instagram", "running");
+          try {
+            const searchKeywords = context.projectName || context.genre;
+            result.snsInstagramResult = await executeSnsResearch({
+              keyword: searchKeywords,
+              platforms: ["instagram"],
+              limit: 50,
+              analyzeWithAI: useAI,
+            });
+
+            // 既存のsnsResultsにも統合
+            if (result.snsInstagramResult) {
+              result.snsResults = result.snsResults || { hashtags: [], topics: [], influencers: [] };
+              const igResult = toSNSTrendResult(result.snsInstagramResult);
+              result.snsResults.hashtags.push(...igResult.hashtags);
+              result.snsResults.influencers.push(...igResult.influencers);
+            }
+
+            console.log(`[orchestrator] Instagram: found ${result.snsInstagramResult?.instagramData?.posts?.length || 0} posts`);
+            updateProgress("sns_instagram", "completed");
+          } catch (err) {
+            console.error("[orchestrator] Instagram error:", err);
+            updateProgress("sns_instagram", "failed");
+          }
+        })()
+      );
+    }
+
+    // SNS TikTok 分析
+    if (context.searchConfig.sources.includes("sns_tiktok")) {
+      dataCollectionPromises.push(
+        (async () => {
+          updateProgress("sns_tiktok", "running");
+          try {
+            const searchKeywords = context.projectName || context.genre;
+            result.snsTiktokResult = await executeSnsResearch({
+              keyword: searchKeywords,
+              platforms: ["tiktok"],
+              limit: 50,
+              analyzeWithAI: useAI,
+            });
+
+            // 既存のsnsResultsにも統合
+            if (result.snsTiktokResult) {
+              result.snsResults = result.snsResults || { hashtags: [], topics: [], influencers: [] };
+              const tiktokResult = toSNSTrendResult(result.snsTiktokResult);
+              result.snsResults.hashtags.push(...tiktokResult.hashtags);
+            }
+
+            console.log(`[orchestrator] TikTok: found ${result.snsTiktokResult?.tiktokData?.videos?.length || 0} videos`);
+            updateProgress("sns_tiktok", "completed");
+          } catch (err) {
+            console.error("[orchestrator] TikTok error:", err);
+            updateProgress("sns_tiktok", "failed");
           }
         })()
       );
@@ -295,11 +388,11 @@ export async function runResearch(
     // 並列実行
     await Promise.all(dataCollectionPromises);
 
-    // Phase 2: 結果統合
-    console.log("[orchestrator] Phase 2: Synthesizing results");
+    // Phase 2: 結果統合（hybridGenerateでAI強化）
+    console.log("[orchestrator] Phase 2: Synthesizing results with hybridGenerate");
     updateProgress("synthesis", "running");
 
-    result.synthesis = synthesizeResults(result);
+    result.synthesis = await synthesizeResults(result);
     updateProgress("synthesis", "completed");
 
     // Phase 3: 提案生成
@@ -317,6 +410,38 @@ export async function runResearch(
 
     console.log(`[orchestrator] Completed in ${result.elapsedMs}ms`);
 
+    // Google Sheetsに自動保存（ハイブリッドストレージ経由）
+    try {
+      const storage = getStorage();
+      // 1. JSONデータをローカル/クラウドに保存
+      await storage.save(`research_${result.id}`, result, "research_result");
+      console.log(`[orchestrator] Research result saved to storage: research_${result.id}`);
+
+      // 2. Google Sheets認証済みの場合、綺麗にフォーマットしたスプレッドシートも作成
+      const connectionStatus = await storage.getConnectionStatus();
+      if (connectionStatus.googleAuthenticated && connectionStatus.mode !== "local") {
+        try {
+          const { getGoogleSheets } = await import("@/lib/storage/google-sheets-adapter");
+          const sheetsAdapter = getGoogleSheets();
+          const { spreadsheetUrl } = await sheetsAdapter.saveFormattedResearch(result, {
+            projectName: context.projectName,
+          });
+          console.log(`[orchestrator] Formatted research exported to Sheets: ${spreadsheetUrl}`);
+        } catch (formattedError) {
+          console.warn("[orchestrator] Failed to create formatted spreadsheet:", formattedError);
+        }
+      }
+    } catch (storageError) {
+      console.warn("[orchestrator] Failed to save to hybrid storage:", storageError);
+      // ストレージ保存失敗はリサーチ結果には影響させない
+    }
+
+    // コスト削減統計をログ
+    const stats = getHybridStats();
+    if (stats.totalQueries > 0) {
+      console.log(`[orchestrator] Hybrid stats: ${stats.cacheHitRate}% cache hit rate, $${stats.estimatedCostSaved.toFixed(4)} saved`);
+    }
+
     return result;
   } catch (err) {
     console.error("[orchestrator] Fatal error:", err);
@@ -327,37 +452,59 @@ export async function runResearch(
 }
 
 /**
- * 初期進捗を作成
+ * 初期進捗を作成（選択されたソースに基づいて動的に生成）
  */
-function createInitialProgress(options?: ResearchOrchestrationOptions): ResearchProgress {
+function createInitialProgress(options?: ResearchOrchestrationOptions, context?: ResearchContext): ResearchProgress {
+  const sources = context?.searchConfig?.sources || [];
+  
   const steps: ResearchProgress["steps"] = [
     { step: "init", label: "初期化", status: "pending" },
-    { step: "infotop", label: "Infotop分析", status: "pending" },
-    { step: "competitor", label: "競合LP収集", status: "pending" },
   ];
 
-  // Meta広告ステップを追加
-  if (options?.includeMetaAds) {
+  // 選択されたソースに応じてステップを追加
+  if (sources.includes("infotop")) {
+    steps.push({ step: "infotop", label: "Infotop分析", status: "pending" });
+  }
+
+  if (sources.includes("competitor")) {
+    steps.push({ step: "competitor", label: "競合LP収集", status: "pending" });
+  }
+
+  if (sources.includes("ads")) {
     steps.push({ step: "ads", label: "Meta広告分析", status: "pending" });
   }
 
-  // Yahoo知恵袋ステップを追加
-  if (options?.includeChiebukuro) {
+  if (sources.includes("chiebukuro")) {
     steps.push({ step: "chiebukuro", label: "Yahoo知恵袋分析", status: "pending" });
   }
 
-  // Amazon書籍ステップを追加
-  if (options?.includeAmazonBooks) {
+  if (sources.includes("amazon_books")) {
     steps.push({ step: "amazon_books", label: "Amazon書籍分析", status: "pending" });
   }
 
-  // YouTubeステップを追加
-  if (options?.includeYouTube) {
+  if (sources.includes("youtube")) {
     steps.push({ step: "youtube", label: "YouTube分析", status: "pending" });
   }
 
+  // SNS個別ソース
+  if (sources.includes("sns_x")) {
+    steps.push({ step: "sns_x", label: "X (Twitter) 分析", status: "pending" });
+  }
+
+  if (sources.includes("sns_instagram")) {
+    steps.push({ step: "sns_instagram", label: "Instagram分析", status: "pending" });
+  }
+
+  if (sources.includes("sns_tiktok")) {
+    steps.push({ step: "sns_tiktok", label: "TikTok分析", status: "pending" });
+  }
+
+  // Deep Research（オプションによる）
+  if (options?.includeDeepResearch !== false) {
+    steps.push({ step: "deep_research", label: "Deep Research", status: "pending" });
+  }
+
   steps.push(
-    { step: "deep_research", label: "Deep Research", status: "pending" },
     { step: "synthesis", label: "結果統合", status: "pending" },
     { step: "proposals", label: "提案生成", status: "pending" }
   );
@@ -412,7 +559,7 @@ async function runDeepResearch(
 
       if (interaction.status === "completed") {
         // 最後のテキスト出力を取得
-        const textOutput = interaction.outputs?.find((o: { type: string }) => o.type === "text");
+        const textOutput = interaction.outputs?.find((o: { type: string }) => o.type === "text") as { type: string; text?: string } | undefined;
         const text = textOutput?.text || "";
 
         console.log("[orchestrator] Deep Research completed. Parsing results...");
@@ -461,7 +608,7 @@ async function runDeepResearch(
         model: "gemini-2.5-pro",
         input: prompt,
       });
-      const textOutput = fallbackInteraction.outputs?.find((o: { type: string }) => o.type === "text");
+      const textOutput = fallbackInteraction.outputs?.find((o: { type: string }) => o.type === "text") as { type: string; text?: string } | undefined;
       const text = textOutput?.text || "";
       return {
         trendReport: text,
@@ -521,9 +668,9 @@ ${context.freeText ? `## 追加情報\n${context.freeText}` : ""}
 }
 
 /**
- * 結果統合
+ * 結果統合（hybridGenerate使用でCAG+RAG活用）
  */
-function synthesizeResults(result: EnhancedResearchResult): ResearchSynthesis {
+async function synthesizeResults(result: EnhancedResearchResult): Promise<ResearchSynthesis> {
   const topPatterns: LPPattern[] = [];
   const topHeadlines: string[] = [];
   const topCTAs: string[] = [];
@@ -607,20 +754,14 @@ function synthesizeResults(result: EnhancedResearchResult): ResearchSynthesis {
   if (result.chiebukuroAnalysis) {
     const chiebukuro = result.chiebukuroAnalysis;
 
-    // 優先度の高い悩みをインサイトに追加
-    if (chiebukuro.priorityPainPoints && chiebukuro.priorityPainPoints.length > 0) {
-      const topPains = chiebukuro.priorityPainPoints.slice(0, 3).map((p) => p.content);
-      keyInsights.push(`ターゲットの深刻な悩み: ${topPains.join("、")}`);
+    // 深刻度の高いキーワードをインサイトに追加
+    if (chiebukuro.painPointStats?.topSeverityKeywords && chiebukuro.painPointStats.topSeverityKeywords.length > 0) {
+      keyInsights.push(`深刻な悩みのキーワード: ${chiebukuro.painPointStats.topSeverityKeywords.slice(0, 5).join("、")}`);
     }
 
-    // 緊急性キーワードを追加
-    if (chiebukuro.urgencyKeywords && chiebukuro.urgencyKeywords.length > 0) {
-      keyInsights.push(`緊急性を示すキーワード: ${chiebukuro.urgencyKeywords.slice(0, 5).join("、")}`);
-    }
-
-    // 推奨アプローチを差別化ポイントに追加
-    if (chiebukuro.recommendedApproaches && chiebukuro.recommendedApproaches.length > 0) {
-      differentiationPoints.push(...chiebukuro.recommendedApproaches.slice(0, 2));
+    // 知恵袋からのインサイトを追加
+    if (chiebukuro.insights && chiebukuro.insights.length > 0) {
+      keyInsights.push(...chiebukuro.insights.slice(0, 2));
     }
   }
 
@@ -629,20 +770,18 @@ function synthesizeResults(result: EnhancedResearchResult): ResearchSynthesis {
     const amazon = result.amazonBooksAnalysis;
 
     // コンセプトパターンをインサイトに追加
-    if (amazon.conceptPatterns && amazon.conceptPatterns.length > 0) {
-      const topConcepts = amazon.conceptPatterns.slice(0, 3).map((c) => c.pattern);
-      keyInsights.push(`売れている書籍のコンセプトパターン: ${topConcepts.join("、")}`);
+    if (amazon.insights?.topConceptPatterns && amazon.insights.topConceptPatterns.length > 0) {
+      keyInsights.push(`売れている書籍のコンセプトパターン: ${amazon.insights.topConceptPatterns.slice(0, 3).join("、")}`);
     }
 
-    // パワーワードをヘッドラインに追加
-    if (amazon.powerWords && amazon.powerWords.length > 0) {
-      topHeadlines.push(...amazon.powerWords.slice(0, 5));
+    // キーワードをヘッドラインに追加
+    if (amazon.insights?.topKeywords && amazon.insights.topKeywords.length > 0) {
+      topHeadlines.push(...amazon.insights.topKeywords.slice(0, 5));
     }
 
-    // トップ書籍のタイトルパターンをヘッドラインに追加
-    if (amazon.topBooks && amazon.topBooks.length > 0) {
-      const titlePatterns = amazon.topBooks.slice(0, 3).flatMap((b) => b.titlePatterns || []);
-      topHeadlines.push(...titlePatterns);
+    // タイトルパターンをヘッドラインに追加
+    if (amazon.insights?.titlePatterns && amazon.insights.titlePatterns.length > 0) {
+      topHeadlines.push(...amazon.insights.titlePatterns.slice(0, 3));
     }
   }
 
@@ -651,24 +790,18 @@ function synthesizeResults(result: EnhancedResearchResult): ResearchSynthesis {
     const youtube = result.youtubeAnalysis;
 
     // 人気タイトル要素をインサイトに追加
-    if (youtube.popularTitleElements && youtube.popularTitleElements.length > 0) {
-      keyInsights.push(`YouTubeで人気のタイトル要素: ${youtube.popularTitleElements.slice(0, 5).join("、")}`);
-    }
-
-    // パワーワードをヘッドラインに追加
-    if (youtube.powerWords && youtube.powerWords.length > 0) {
-      topHeadlines.push(...youtube.powerWords.slice(0, 5));
+    if (youtube.insights?.topTitlePatterns && youtube.insights.topTitlePatterns.length > 0) {
+      keyInsights.push(`YouTubeで人気のタイトル要素: ${youtube.insights.topTitlePatterns.slice(0, 5).join("、")}`);
     }
 
     // エモーショナルフックをヘッドラインに追加
-    if (youtube.emotionalHooks && youtube.emotionalHooks.length > 0) {
-      topHeadlines.push(...youtube.emotionalHooks.slice(0, 3));
+    if (youtube.insights?.topEmotionalHooks && youtube.insights.topEmotionalHooks.length > 0) {
+      topHeadlines.push(...youtube.insights.topEmotionalHooks.slice(0, 5));
     }
 
-    // アウトパフォーマー動画からのインサイト
-    if (youtube.outperformers && youtube.outperformers.length > 0) {
-      const avgRatio = youtube.outperformers.reduce((sum, v) => sum + (v.performanceRatio || 1), 0) / youtube.outperformers.length;
-      keyInsights.push(`高パフォーマンス動画の平均倍率: ${avgRatio.toFixed(1)}倍（チャンネル平均比）`);
+    // トップパフォーマー動画からのインサイト
+    if (youtube.insights?.topPerformers && youtube.insights.topPerformers.length > 0) {
+      keyInsights.push(`トップパフォーマンス動画: ${youtube.insights.topPerformers.length}件`);
     }
   }
 
@@ -692,37 +825,108 @@ function synthesizeResults(result: EnhancedResearchResult): ResearchSynthesis {
     });
   }
 
+  // hybridGenerateでAI強化インサイトを取得
+  try {
+    const synthesisPrompt = `以下のリサーチデータを分析し、追加のインサイトと差別化ポイントを提案してください。
+
+## 収集済みデータ
+- 競合LP数: ${result.competitorResults?.length || 0}件
+- Infotop商品数: ${result.infotopResults?.length || 0}件
+- 広告数: ${result.metaAdsAnalysis?.ads.length || 0}件
+- 知恵袋質問数: ${result.chiebukuroAnalysis?.questions?.length || 0}件
+- YouTube動画数: ${result.youtubeAnalysis?.insights?.totalVideos || 0}件
+- Amazon書籍数: ${result.amazonBooksAnalysis?.insights?.totalBooks || 0}件
+
+## 現在のインサイト
+${keyInsights.slice(0, 5).map((i, idx) => `${idx + 1}. ${i}`).join("\n")}
+
+## 現在のヘッドライン案
+${topHeadlines.slice(0, 5).join(", ")}
+
+## 出力形式（JSON）
+\`\`\`json
+{
+  "additionalInsights": ["インサイト1", "インサイト2", "インサイト3"],
+  "differentiationIdeas": ["差別化アイデア1", "差別化アイデア2"],
+  "headlineSuggestions": ["ヘッドライン案1", "ヘッドライン案2"]
+}
+\`\`\``;
+
+    console.log("[orchestrator] Enhancing synthesis with hybridGenerate...");
+
+    const hybridResult = await hybridGenerate({
+      prompt: synthesisPrompt,
+      projectId: result.id,
+      useCache: true,
+      dynamicSources: ["research_result"],
+      maxDynamicTokens: 2000,
+    });
+
+    // JSONパース
+    const jsonMatch = hybridResult.text.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[1]) as {
+        additionalInsights?: string[];
+        differentiationIdeas?: string[];
+        headlineSuggestions?: string[];
+      };
+
+      if (parsed.additionalInsights) {
+        keyInsights.push(...parsed.additionalInsights);
+      }
+      if (parsed.differentiationIdeas) {
+        differentiationPoints.push(...parsed.differentiationIdeas);
+      }
+      if (parsed.headlineSuggestions) {
+        topHeadlines.push(...parsed.headlineSuggestions);
+      }
+
+      console.log("[orchestrator] Synthesis enhanced with AI insights");
+    }
+  } catch (err) {
+    console.warn("[orchestrator] Failed to enhance synthesis with AI:", err);
+    // AI強化に失敗しても基本のsynthesisは返す
+  }
+
   return {
     topPatterns,
-    topHeadlines: [...new Set(topHeadlines)].slice(0, 10),
-    topCTAs: [...new Set(topCTAs)].slice(0, 5),
+    topHeadlines: Array.from(new Set(topHeadlines)).slice(0, 10),
+    topCTAs: Array.from(new Set(topCTAs)).slice(0, 5),
     keyInsights,
     differentiationPoints,
   };
 }
 
 /**
- * 提案生成
+ * 提案生成（hybridGenerate使用でCAG+RAG活用）
  */
 async function generateProposals(
   context: ResearchContext,
   result: EnhancedResearchResult
 ): Promise<ResearchProposals> {
-  const client = getGeminiClient();
-
   const prompt = buildProposalsPrompt(context, result);
 
-  console.log("[orchestrator] Generating proposals...");
+  console.log("[orchestrator] Generating proposals with hybridGenerate (CAG+RAG)...");
 
-  // Interactions APIを使用（通常のモデル）
-  const interaction = await client.interactions.create({
-    model: "gemini-2.5-pro",
-    input: prompt,
+  // hybridGenerate()を使用してCAGキャッシュとRAGを活用
+  const hybridResult = await hybridGenerate({
+    prompt,
+    projectId: result.id,
+    useCache: true,           // CAGキャッシュを使用（静的ナレッジ）
+    dynamicSources: ["research_result", "competitor_lp"], // RAGで動的データも参照
+    includeN1: true,          // N1データも含める
+    includeCompetitors: true, // 競合データも含める
+    maxDynamicTokens: 4000,
   });
 
-  // 最後のテキスト出力を取得
-  const textOutput = interaction.outputs?.find((o: { type: string }) => o.type === "text");
-  const text = textOutput?.text || "";
+  console.log(`[orchestrator] hybridGenerate completed:`, {
+    cachedTokens: hybridResult.tokensUsed.cached,
+    dynamicTokens: hybridResult.tokensUsed.dynamic,
+    costSavings: hybridResult.costSavings.explanation,
+    timing: hybridResult.timing,
+  });
+
+  const text = hybridResult.text || "";
 
   // JSONパース試行
   try {
@@ -767,36 +971,35 @@ function buildProposalsPrompt(
 
   // Yahoo知恵袋インサイトを構築
   let chiebukuroSection = "";
-  if (chiebukuro && chiebukuro.totalQuestions > 0) {
+  if (chiebukuro && chiebukuro.questions?.length > 0) {
     chiebukuroSection = `
 ## Yahoo知恵袋分析（リアルな悩み）
-- 分析した質問数: ${chiebukuro.totalQuestions}件
-- 優先度の高い悩み: ${chiebukuro.priorityPainPoints?.slice(0, 3).map((p) => p.content).join("、") || "なし"}
-- 緊急性キーワード: ${chiebukuro.urgencyKeywords?.slice(0, 5).join("、") || "なし"}
-- 深刻度キーワード: ${chiebukuro.severityKeywords?.slice(0, 5).join("、") || "なし"}
+- 分析した質問数: ${chiebukuro.questions.length}件
+- 深刻度キーワード: ${chiebukuro.painPointStats?.topSeverityKeywords?.slice(0, 5).join("、") || "なし"}
+- インサイト: ${chiebukuro.insights?.slice(0, 2).join("、") || "なし"}
 `;
   }
 
   // Amazon書籍インサイトを構築
   let amazonBooksSection = "";
-  if (amazonBooks && amazonBooks.totalBooks > 0) {
+  if (amazonBooks && amazonBooks.insights?.totalBooks > 0) {
     amazonBooksSection = `
 ## Amazon書籍分析（売れているコンセプト）
-- 分析した書籍数: ${amazonBooks.totalBooks}冊
-- コンセプトパターン: ${amazonBooks.conceptPatterns?.slice(0, 3).map((c) => c.pattern).join("、") || "なし"}
-- パワーワード: ${amazonBooks.powerWords?.slice(0, 5).join("、") || "なし"}
+- 分析した書籍数: ${amazonBooks.insights.totalBooks}冊
+- コンセプトパターン: ${amazonBooks.insights.topConceptPatterns?.slice(0, 3).join("、") || "なし"}
+- トップキーワード: ${amazonBooks.insights.topKeywords?.slice(0, 5).join("、") || "なし"}
 `;
   }
 
   // YouTubeインサイトを構築
   let youtubeSection = "";
-  if (youtube && youtube.totalVideos > 0) {
+  if (youtube && youtube.insights?.totalVideos > 0) {
     youtubeSection = `
 ## YouTube分析（人気タイトル要素）
-- 分析した動画数: ${youtube.totalVideos}本
-- 人気タイトル要素: ${youtube.popularTitleElements?.slice(0, 5).join("、") || "なし"}
-- パワーワード: ${youtube.powerWords?.slice(0, 5).join("、") || "なし"}
-- エモーショナルフック: ${youtube.emotionalHooks?.slice(0, 5).join("、") || "なし"}
+- 分析した動画数: ${youtube.insights.totalVideos}本
+- 人気タイトルパターン: ${youtube.insights.topTitlePatterns?.slice(0, 5).join("、") || "なし"}
+- トップキーワード: ${youtube.insights.topKeywords?.slice(0, 5).join("、") || "なし"}
+- エモーショナルフック: ${youtube.insights.topEmotionalHooks?.slice(0, 5).join("、") || "なし"}
 `;
   }
 
@@ -1078,3 +1281,5 @@ function getMoodLabel(mood: string): string {
   };
   return labels[mood] || mood;
 }
+
+

@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="icons/icon128.png" sizes="128x128">
+    <link rel="icon" href="icons/icon128.png" sizes="32x32">
+    <title>Editor - Easy Banana</title>
+    <style>
+      :root { color-scheme: light dark; }
+      html, body { height: 100%; margin: 0; }
+      *, *::before, *::after { box-sizing: border-box; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background: #121212; color: #e5e5e5; }
+      @media (prefers-color-scheme: light) { body { background: #fff; color: #1a1a1a; } }
+      .wrap { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+      .toolbar { display: flex; align-items: center; gap: 10px; padding: 10px; border-bottom: 1px solid rgba(128,128,128,.25); flex-wrap: wrap; }
+      .toolbar button, .toolbar select, .toolbar input[type="color"] { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(128,128,128,.35); background: #ffd54f; color: #1a1a1a; font-weight: 600; cursor: pointer; }
+      .toolbar .ghost { background: #2c2c2c; color: #eaeaea; border-color: rgba(255,255,255,.2); }
+      @media (prefers-color-scheme: light) { .toolbar .ghost { background: #f3f4f6; color: #1b1b1b; border-color: rgba(0,0,0,.15); } }
+      .toolbar .seg { display: inline-flex; border: 1px solid rgba(128,128,128,.35); border-radius: 999px; overflow: hidden; }
+      .toolbar .seg button { background: transparent; border: 0; padding: 6px 10px; color: inherit; }
+      .toolbar .ctrl { display: inline-flex; align-items: center; gap: 6px; }
+      .toolbar input[type="range"] { accent-color: #ffd54f; }
+      .toolbar input[type="number"] { width: 64px; padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(128,128,128,.35); background: #ffffff; color: #1a1a1a; }
+      @media (prefers-color-scheme: dark) { .toolbar input[type="number"] { background: #1f1f1f; color: #eaeaea; border-color: rgba(255,255,255,.2); } }
+      .toolbar .break { flex-basis: 100%; height: 0; }
+      .swatches { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; }
+      .swatch { width: 22px; height: 22px; border-radius: 6px; border: 1px solid rgba(0,0,0,.35); cursor: pointer; padding: 0; }
+      .swatch.selected { outline: 2px solid #ffd54f; outline-offset: 2px; }
+      @media (prefers-color-scheme: dark) { .swatch { border-color: rgba(255,255,255,.25); } }
+      .toolbar .seg .active { background: #ffd54f; color: #1a1a1a; }
+      .stage { position: relative; overflow: auto; background: #222; }
+      @media (prefers-color-scheme: light) { .stage { background: #efefef; } }
+      .canvas-wrap { width: 100%; height: 100%; display: grid; place-items: center; }
+      canvas { image-rendering: crisp-edges; image-rendering: pixelated; background: #fff; }
+      .hint { font-size: 12px; opacity: .8; margin-left: auto; }
+      /* Brush cursor overlay */
+      .cursor { position: absolute; pointer-events: none; border-radius: 50%; border: 1.5px solid #ffd54f; width: 20px; height: 20px; left: -9999px; top: -9999px; z-index: 10; transform: translate(-50%, -50%); box-shadow: 0 0 0 1px rgba(0,0,0,.25); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="toolbar">
+        <div class="seg" id="toolSeg" role="group">
+          <button type="button" data-tool="brush" class="active">Brush</button>
+          <button type="button" data-tool="eraser">Eraser</button>
+        </div>
+        <div class="ctrl">
+          <label>Color <input id="color" type="color" value="#000000" /></label>
+          <div id="colorSwatches" class="swatches" aria-label="色プリセット">
+            <button type="button" class="swatch" title="#000000" data-color="#000000" style="background:#000000"></button>
+            <button type="button" class="swatch" title="#ffffff" data-color="#ffffff" style="background:#ffffff"></button>
+            <button type="button" class="swatch" title="#ff0000" data-color="#ff0000" style="background:#ff0000"></button>
+            <button type="button" class="swatch" title="#00ff00" data-color="#00ff00" style="background:#00ff00"></button>
+            <button type="button" class="swatch" title="#0000ff" data-color="#0000ff" style="background:#0000ff"></button>
+            <button type="button" class="swatch" title="#ffff00" data-color="#ffff00" style="background:#ffff00"></button>
+            <button type="button" class="swatch" title="#ff00ff" data-color="#ff00ff" style="background:#ff00ff"></button>
+            <button type="button" class="swatch" title="#00ffff" data-color="#00ffff" style="background:#00ffff"></button>
+            <button type="button" class="swatch" title="#808080" data-color="#808080" style="background:#808080"></button>
+            <button type="button" class="swatch" title="#ffa500" data-color="#ffa500" style="background:#ffa500"></button>
+          </div>
+        </div>
+        <div class="ctrl">
+          <label for="sizeRange">Size</label>
+          <input id="sizeRange" type="range" min="1" max="200" step="1" value="4" />
+          <input id="sizeNum" type="number" min="1" max="200" step="1" value="4" />
+          <div id="sizePresets" class="seg" role="group" aria-label="サイズプリセット">
+            <button type="button" class="seg-btn" data-size="5">5</button>
+            <button type="button" class="seg-btn" data-size="10">10</button>
+            <button type="button" class="seg-btn" data-size="20">20</button>
+            <button type="button" class="seg-btn" data-size="40">40</button>
+            <button type="button" class="seg-btn" data-size="80">80</button>
+            <button type="button" class="seg-btn" data-size="120">120</button>
+            <button type="button" class="seg-btn" data-size="160">160</button>
+            <button type="button" class="seg-btn" data-size="200">200</button>
+          </div>
+        </div>
+        <div class="break"></div>
+        <div class="ctrl">
+          <label for="opacityRange">Opacity</label>
+          <input id="opacityRange" type="range" min="0" max="100" step="1" value="100" />
+          <input id="opacityNum" type="number" min="0" max="100" step="1" value="100" />
+          <div id="opacityPresets" class="seg" role="group" aria-label="不透明度プリセット">
+            <button type="button" class="seg-btn" data-opacity="25">25</button>
+            <button type="button" class="seg-btn" data-opacity="50">50</button>
+            <button type="button" class="seg-btn" data-opacity="75">75</button>
+            <button type="button" class="seg-btn" data-opacity="100">100</button>
+          </div>
+        </div>
+        <button id="undo" class="ghost">Undo</button>
+        <button id="redo" class="ghost">Redo</button>
+        <button id="zoomOut" class="ghost">-</button>
+        <button id="zoomIn" class="ghost">+</button>
+        <div class="seg" id="saveModeSeg" role="group" aria-label="保存先">
+          <button type="button" data-mode="replace" class="active">置き換え</button>
+          <button type="button" data-mode="add">新規追加</button>
+        </div>
+        <span class="hint">Space+ドラッグ:パン / ⌘/Ctrl+ホイール:ズーム</span>
+        <button id="save">保存</button>
+        <button id="cancel" class="ghost">キャンセル</button>
+      </div>
+      <div class="stage" id="stage">
+        <div class="canvas-wrap">
+          <canvas id="canvas"></canvas>
+        </div>
+        <div id="cursor" class="cursor"></div>
+      </div>
+    </div>
+    <script src="editor.js"></script>
+  </body>
+  
+</html>

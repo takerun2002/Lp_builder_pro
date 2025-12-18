@@ -53,8 +53,8 @@ export const GENRE_LABELS: Record<Genre, string> = {
 export interface TargetInfo {
   ageGroups: AgeGroup[];
   gender: "male" | "female" | "both";
-  problems: string;      // 悩み・課題
-  desires: string;       // 理想の状態
+  problems?: string;     // 悩み・課題（任意）
+  desires?: string;      // 理想の状態（任意）
   occupation?: string;   // 職業
 }
 
@@ -104,7 +104,18 @@ export interface SearchConfig {
 
 export type Region = "japan" | "us" | "europe" | "asia";
 export type SearchPeriod = "1month" | "3months" | "6months" | "1year" | "all";
-export type DataSource = "infotop" | "competitor" | "ads" | "sns" | "overseas" | "chiebukuro" | "amazon_books" | "youtube";
+export type DataSource =
+  | "infotop"
+  | "competitor"
+  | "ads"
+  | "sns"           // 後方互換性のため残す（廃止予定）
+  | "sns_x"         // X (Twitter)
+  | "sns_instagram" // Instagram
+  | "sns_tiktok"    // TikTok
+  | "overseas"
+  | "chiebukuro"
+  | "amazon_books"
+  | "youtube";
 
 export const REGION_LABELS: Record<Region, string> = {
   japan: "日本",
@@ -112,6 +123,122 @@ export const REGION_LABELS: Record<Region, string> = {
   europe: "ヨーロッパ",
   asia: "アジア",
 };
+
+// ============================================
+// APIプロバイダー・無料枠・コスト設定
+// ============================================
+
+export type ApiProvider =
+  | "gemini"
+  | "firecrawl"
+  | "brightdata"
+  | "perplexity"
+  | "openrouter"
+  | "manus";
+
+export interface ApiFreeQuota {
+  provider: ApiProvider;
+  name: string;
+  freeQuota: number;
+  quotaPeriod: "minute" | "hour" | "day" | "month";
+  costPerRequest?: number;
+  envKey: string;
+}
+
+export const API_FREE_QUOTAS: ApiFreeQuota[] = [
+  { provider: "gemini", name: "Gemini API", freeQuota: 60, quotaPeriod: "minute", costPerRequest: 0.0001, envKey: "GOOGLE_API_KEY" },
+  { provider: "firecrawl", name: "Firecrawl API", freeQuota: 500, quotaPeriod: "month", costPerRequest: 0.01, envKey: "FIRECRAWL_API_KEY" },
+  { provider: "brightdata", name: "BrightData API", freeQuota: 0, quotaPeriod: "month", costPerRequest: 0.005, envKey: "BRIGHTDATA_API_KEY" },
+  { provider: "perplexity", name: "Perplexity API", freeQuota: 0, quotaPeriod: "month", costPerRequest: 0.005, envKey: "PERPLEXITY_API_KEY" },
+  { provider: "openrouter", name: "OpenRouter", freeQuota: 0, quotaPeriod: "month", costPerRequest: 0, envKey: "OPENROUTER_API_KEY" },
+  { provider: "manus", name: "Manus AI", freeQuota: 0, quotaPeriod: "month", costPerRequest: 0.01, envKey: "MANUS_API_KEY" },
+];
+
+export interface SourceApiMapping {
+  source: DataSource;
+  primaryApi: ApiProvider;
+  alternativeApis?: ApiProvider[];
+  estimatedRequests: number;
+}
+
+export const SOURCE_API_MAPPINGS: SourceApiMapping[] = [
+  { source: "infotop", primaryApi: "firecrawl", estimatedRequests: 3 },
+  { source: "competitor", primaryApi: "firecrawl", estimatedRequests: 5 },
+  { source: "chiebukuro", primaryApi: "firecrawl", estimatedRequests: 3 },
+  { source: "amazon_books", primaryApi: "firecrawl", estimatedRequests: 3 },
+  { source: "youtube", primaryApi: "firecrawl", estimatedRequests: 2 },
+  { source: "ads", primaryApi: "brightdata", alternativeApis: ["firecrawl"], estimatedRequests: 5 },
+  { source: "sns_x", primaryApi: "brightdata", estimatedRequests: 10 },
+  { source: "sns_instagram", primaryApi: "brightdata", estimatedRequests: 10 },
+  { source: "sns_tiktok", primaryApi: "brightdata", estimatedRequests: 10 },
+  { source: "overseas", primaryApi: "firecrawl", estimatedRequests: 5 },
+];
+
+// ============================================
+// リサーチプリセット（新版）
+// ============================================
+
+export type ResearchPresetId = "free" | "standard" | "thorough" | "custom";
+
+export interface ResearchPreset {
+  id: ResearchPresetId;
+  name: string;
+  description: string;
+  icon: string;
+  enabledSources: DataSource[];
+  estimatedCost: string;
+  estimatedTime: string;
+}
+
+export const RESEARCH_PRESETS: ResearchPreset[] = [
+  {
+    id: "free",
+    name: "無料",
+    description: "無料枠のみ使用。Gemini + Firecrawlの無料枠でリサーチ。",
+    icon: "⚡",
+    enabledSources: ["chiebukuro", "amazon_books"],
+    estimatedCost: "$0",
+    estimatedTime: "1〜2分",
+  },
+  {
+    id: "standard",
+    name: "標準",
+    description: "バランス型。競合分析・YouTube分析も含む。主に無料枠で収まる。",
+    icon: "🔍",
+    enabledSources: ["infotop", "competitor", "chiebukuro", "amazon_books", "youtube"],
+    estimatedCost: "$0〜0.10",
+    estimatedTime: "3〜5分",
+  },
+  {
+    id: "thorough",
+    name: "徹底",
+    description: "SNS分析・広告調査も含む。BrightData/Perplexityが必要。",
+    icon: "🚀",
+    enabledSources: ["infotop", "competitor", "chiebukuro", "amazon_books", "youtube", "ads", "sns_x", "sns_instagram", "sns_tiktok", "overseas"],
+    estimatedCost: "$1〜3",
+    estimatedTime: "5〜10分",
+  },
+  {
+    id: "custom",
+    name: "カスタム",
+    description: "自分で全てのソースとAPIを選択。",
+    icon: "⚙️",
+    enabledSources: [],
+    estimatedCost: "選択次第",
+    estimatedTime: "選択次第",
+  },
+];
+
+// ソースに必要なAPIを取得
+export function getRequiredApiForSource(source: DataSource): ApiProvider | null {
+  const mapping = SOURCE_API_MAPPINGS.find((m) => m.source === source);
+  return mapping?.primaryApi || null;
+}
+
+// API無料枠情報を取得
+export function getApiQuotaInfo(provider: ApiProvider): ApiFreeQuota | null {
+  return API_FREE_QUOTAS.find((q) => q.provider === provider) || null;
+}
 
 export const PERIOD_LABELS: Record<SearchPeriod, string> = {
   "1month": "最新1ヶ月",
@@ -126,11 +253,119 @@ export const SOURCE_LABELS: Record<DataSource, string> = {
   competitor: "競合LP",
   ads: "広告クリエイティブ",
   sns: "SNSトレンド",
+  sns_x: "X (Twitter)",
+  sns_instagram: "Instagram",
+  sns_tiktok: "TikTok",
   overseas: "海外LP",
   chiebukuro: "Yahoo知恵袋",
   amazon_books: "Amazon書籍",
   youtube: "YouTube動画",
 };
+
+// スクレイパー詳細情報
+export interface ScraperOption {
+  id: DataSource;
+  name: string;
+  description: string;
+  icon: string;
+  defaultEnabled: boolean;
+  category: "keyword" | "pain" | "competitor" | "trend";
+}
+
+export const SCRAPER_OPTIONS: ScraperOption[] = [
+  {
+    id: "infotop",
+    name: "Infotopランキング",
+    description: "売れている情報商材のタイトル・価格帯・コンセプトを分析",
+    icon: "🏪",
+    defaultEnabled: true,
+    category: "keyword",
+  },
+  {
+    id: "competitor",
+    name: "競合LP分析",
+    description: "Google検索上位の競合LPを自動スクレイピング・構造分析",
+    icon: "🎯",
+    defaultEnabled: true,
+    category: "competitor",
+  },
+  {
+    id: "chiebukuro",
+    name: "Yahoo知恵袋",
+    description: "リアルな悩み・質問を収集して深刻度を分析",
+    icon: "❓",
+    defaultEnabled: true,
+    category: "pain",
+  },
+  {
+    id: "amazon_books",
+    name: "Amazon書籍",
+    description: "売れている書籍のタイトル・パワーワードを抽出",
+    icon: "📚",
+    defaultEnabled: true,
+    category: "keyword",
+  },
+  {
+    id: "youtube",
+    name: "YouTube動画",
+    description: "人気動画のタイトル・サムネイル要素を分析",
+    icon: "🎬",
+    defaultEnabled: true,
+    category: "keyword",
+  },
+  {
+    id: "ads",
+    name: "Meta広告",
+    description: "Facebook/Instagram広告のクリエイティブを分析",
+    icon: "📢",
+    defaultEnabled: false,
+    category: "trend",
+  },
+  {
+    id: "sns_x",
+    name: "X (Twitter)",
+    description: "Xのトレンド・ハッシュタグ・インフルエンサーを分析",
+    icon: "𝕏",
+    defaultEnabled: false,
+    category: "trend",
+  },
+  {
+    id: "sns_instagram",
+    name: "Instagram",
+    description: "Instagramの投稿・ハッシュタグ・エンゲージメントを分析",
+    icon: "📸",
+    defaultEnabled: false,
+    category: "trend",
+  },
+  {
+    id: "sns_tiktok",
+    name: "TikTok",
+    description: "TikTokのバイラル動画・トレンドサウンドを分析",
+    icon: "🎵",
+    defaultEnabled: false,
+    category: "trend",
+  },
+  {
+    id: "overseas",
+    name: "海外LP",
+    description: "海外の競合LPを分析（英語圏）",
+    icon: "🌐",
+    defaultEnabled: false,
+    category: "competitor",
+  },
+];
+
+// デフォルトで有効なソースを取得
+export function getDefaultSources(): DataSource[] {
+  return SCRAPER_OPTIONS
+    .filter((option) => option.defaultEnabled)
+    .map((option) => option.id);
+}
+
+// カテゴリ別にスクレイパーを取得
+export function getScrapersByCategory(category: ScraperOption["category"]): ScraperOption[] {
+  return SCRAPER_OPTIONS.filter((option) => option.category === category);
+}
 
 // === リサーチ結果 ===
 
@@ -173,7 +408,10 @@ export type ResearchStep =
   | "competitor"
   | "deep_research"
   | "ads"
-  | "sns"
+  | "sns"          // 後方互換性のため残す
+  | "sns_x"
+  | "sns_instagram"
+  | "sns_tiktok"
   | "chiebukuro"
   | "amazon_books"
   | "youtube"
@@ -399,7 +637,7 @@ export interface ReferenceLPProposal {
 }
 
 // ============================================
-// 内田式リサーチエージェント 追加型定義
+// たけるん式リサーチエージェント 追加型定義
 // ============================================
 
 // === 市場分析 ===
@@ -418,7 +656,7 @@ export interface KeywordVolume {
   trend?: "up" | "stable" | "down";
 }
 
-// === 競合分析（内田式） ===
+// === 競合分析（たけるん式） ===
 
 export interface CompetitorAnalysis {
   url: string;
@@ -434,7 +672,7 @@ export interface CompetitorAnalysis {
   source: "google" | "infotop" | "manual";
 }
 
-// === 悩み収集（内田式） ===
+// === 悩み収集（たけるん式） ===
 
 export interface CollectedPainPoint {
   id: string;
@@ -470,7 +708,7 @@ export const QUADRANT_LABELS: Record<PainPointQuadrant, string> = {
   ignore: "⚪ 無視",
 };
 
-// === キーワードバンク（内田式） ===
+// === キーワードバンク（たけるん式） ===
 
 export interface CollectedKeyword {
   id: string;
@@ -510,7 +748,7 @@ export interface BenefitConversion {
   keywords: string[];        // 使用したキーワード
 }
 
-// === コンセプト候補（内田式） ===
+// === コンセプト候補（たけるん式） ===
 
 export interface ConceptCandidate {
   id: string;
@@ -534,7 +772,7 @@ export interface ConceptScores {
   overall: number;           // 総合スコア (0-100)
 }
 
-// === 内田式リサーチ結果 ===
+// === たけるん式リサーチ結果 ===
 
 export interface UchidaResearchResult {
   id: string;
@@ -576,7 +814,7 @@ export interface UchidaResearchResult {
   recommendedConcept?: ConceptCandidate;
 }
 
-// === リサーチステップ（内田式6ステップ） ===
+// === リサーチステップ（たけるん式6ステップ） ===
 
 export type UchidaResearchStep = 
   | "init"                // 初期化
@@ -615,3 +853,5 @@ export interface UchidaResearchProgress {
   }[];
   overallPercent: number;
 }
+
+

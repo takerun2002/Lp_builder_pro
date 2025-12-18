@@ -1,0 +1,196 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="icons/icon128.png" sizes="128x128">
+    <link rel="icon" href="icons/icon128.png" sizes="32x32">
+    <title>Settings - Easy Banana</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --btn-bg: #ffd54f;
+        --btn-fg: #1b1b1b;
+        --btn-border: rgba(0,0,0,.2);
+        --btn-ghost-bg: #f3f4f6;
+        --btn-ghost-fg: #1b1b1b;
+        --panel-bg: #ffffff;
+        --panel-fg: #1b1b1b;
+        --muted: gray;
+        --note-bg: rgba(255,213,79,.08);
+        --note-border: rgba(128,128,128,.25);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --btn-border: rgba(255,255,255,.2);
+          --btn-ghost-bg: #2c2c2c;
+          --btn-ghost-fg: #eaeaea;
+          --panel-bg: #121212;
+          --panel-fg: #e5e5e5;
+          --muted: #adadad;
+          --note-bg: #1f1a00;
+          --note-border: rgba(255,255,255,.2);
+        }
+      }
+      html, body { height: 100%; margin: 0; }
+      *, *::before, *::after { box-sizing: border-box; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background: var(--panel-bg); color: var(--panel-fg); }
+      .wrap { box-sizing: border-box; height: 100%; padding: 16px; display: flex; flex-direction: column; gap: 16px; width: 100%; overflow: auto; }
+      h1 { margin: 0; font-size: 18px; font-weight: 700; }
+      .row { display: flex; gap: 8px; align-items: center; }
+      .row.api { margin-top: 0; }
+      label { font-size: 12px; color: var(--muted); }
+      input[type="password"], input[type="text"] { flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(128,128,128,.35); background: transparent; }
+      button { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--btn-border); background: var(--btn-bg); color: var(--btn-fg); font-weight: 600; cursor: pointer; }
+      button:hover { filter: brightness(0.98); }
+      .ghost { background: var(--btn-ghost-bg); color: var(--btn-ghost-fg); }
+      .hint { font-size: 12px; color: var(--muted); margin-left: auto; }
+      .hint-left { margin-left: 0; }
+      /* Security notice: always visible */
+      .note { font-size: 12px; color: var(--muted); border: 1px solid var(--note-border); border-left: 4px solid #ffd54f; padding: 10px 12px; border-radius: 6px; background: var(--note-bg); margin-bottom: 8px; }
+      .note b { color: var(--panel-fg); }
+      .note ul { margin: 6px 0 0 16px; padding: 0; }
+      .note li { margin: 2px 0; }
+      .status { font-size: 12px; color: var(--muted); }
+      /* Custom prompts layout */
+      .cp { border: 1px solid var(--note-border); border-radius: 12px; padding: 12px; }
+      .cp h2 { margin: 0; font-size: 16px; }
+      .cp-headline { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+      .cp-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+      .cp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; }
+      .cp-item { border: 1px solid var(--note-border); border-radius: 10px; padding: 10px; display: grid; grid-template-rows: auto 1fr; gap: 8px; min-width: 0; }
+      .cp-head { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; min-width: 0; }
+      .cp-title { width: 100%; max-width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(128,128,128,.35); background: transparent; }
+      .cp-body { width: 100%; max-width: 100%; min-height: 100px; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(128,128,128,.35); background: transparent; resize: vertical; overflow: auto; }
+      .cp-enabled { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+      .prov { min-width: 88px; font-weight: 600; color: var(--muted); }
+      /* Visible separator for both light/dark */
+      .sep { border: 0; height: 0; width: 100%; display: block; margin: 14px 0; }
+      .sep { border-top: 1px solid rgba(0,0,0,.28); }
+      @media (prefers-color-scheme: dark) {
+        .sep { border-top-color: rgba(255,255,255,.35); }
+      }
+      .hidden { display: none !important; }
+      /* Toast */
+      .toast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); background: rgba(0,0,0,.82); color: #fff; border-radius: 8px; padding: 8px 12px; z-index: 10000; font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.35); }
+      @media (prefers-color-scheme: light) { .toast { background: rgba(0,0,0,.85); color: #fff; } }
+      /* Tooltip */
+      .tooltip-icon { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: rgba(128,128,128,.25); color: var(--muted); font-size: 11px; font-weight: 700; cursor: help; margin-left: 4px; position: relative; }
+      .tooltip-icon:hover { background: rgba(128,128,128,.35); }
+      .tooltip-text { position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.9); color: #fff; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 400; white-space: nowrap; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+      .tooltip-icon:hover .tooltip-text { opacity: 1; }
+      .tooltip-text::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: rgba(0,0,0,.9); }
+      @media (prefers-color-scheme: light) { .tooltip-text { background: rgba(0,0,0,.9); color: #fff; } .tooltip-text::after { border-top-color: rgba(0,0,0,.9); } }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="row" style="justify-content: space-between; gap: 10px; align-items: center;">
+        <h1>Settings</h1>
+        <div class="row" style="gap: 8px;">
+          <button id="saveTop">Save Settings</button>
+          <button id="closeTop" class="ghost">Close</button>
+        </div>
+      </div>
+      <div class="note">
+        <b>セキュリティに関する注意</b>
+        <ul>
+          <li>入力した API キーはこの端末の Chrome のローカルストレージ（chrome.storage.local）に保存され、<b>暗号化されません</b>。</li>
+          <li>同じユーザーの Chrome プロファイルにアクセスできる人やソフトウェアは、キーを閲覧できる可能性があります。</li>
+          <li>生成リクエスト時にキーは選択したプロバイダのエンドポイント（Google: generativelanguage.googleapis.com ／ OpenRouter: openrouter.ai）へ送信されます。</li>
+          <li>共有端末では保存を避け、必要に応じてキーを更新・削除してください。</li>
+        </ul>
+      </div>
+      <!-- Provider radios removed: keys are now selected per model in Side Panel -->
+
+      <div class="row api" style="justify-content: space-between; gap: 10px;">
+        <div class="row" style="flex:1; gap:8px; align-items:center;">
+          <span class="prov">Gemini（非推奨）<span class="tooltip-icon">?<span class="tooltip-text">まもなくEasy Bananaから削除予定</span></span></span>
+          <input id="apiKeyGemini" type="password" placeholder="Gemini API Key" />
+        </div>
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="hint">Gemini APIキー取得（Google AI Studio）</a>
+      </div>
+      <div class="row api" style="justify-content: space-between; gap: 10px;">
+        <div class="row" style="flex:1; gap:8px; align-items:center;">
+          <span class="prov">OpenRouter（非推奨）<span class="tooltip-icon">?<span class="tooltip-text">まもなくEasy Bananaから削除予定</span></span></span>
+          <input id="apiKeyOpenRouter" type="password" placeholder="OpenRouter API Key" />
+        </div>
+        <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" class="hint">OpenRouter APIキー取得</a>
+      </div>
+      <div class="row api" style="justify-content: space-between; gap: 10px;">
+        <div class="row" style="flex:1; gap:8px; align-items:center;">
+          <span class="prov">FAL（推奨）</span>
+          <input id="apiKeyFal" type="password" placeholder="FAL API Key" />
+        </div>
+        <a href="https://fal.ai/dashboard/keys" target="_blank" rel="noopener noreferrer" class="hint">FAL APIキー取得</a>
+      </div>
+      <div class="row api" style="justify-content: space-between; gap: 10px;">
+        <div class="row" style="flex:1; gap:8px; align-items:center;">
+          <span class="prov">ElevenLabs</span>
+          <input id="apiKeyElevenLabs" type="password" placeholder="ElevenLabs API Key" />
+        </div>
+        <a href="https://elevenlabs.io/app/developers/api-keys" target="_blank" rel="noopener noreferrer" class="hint">ElevenLabs APIキー取得</a>
+      </div>
+
+      <!-- Default model: placed near API key inputs -->
+      <div class="row" style="gap:10px; align-items:center;">
+        <label style="min-width:120px;">Default Model</label>
+        <select id="defaultModel" style="min-width:320px; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(128,128,128,.35); background: transparent; color: inherit;"></select>
+        <span class="hint">画像生成画面の初期値に使用します</span>
+      </div>
+      <div class="row" style="gap:10px; align-items:center; justify-content: space-between;">
+        <label class="row" style="gap:10px; align-items:center; margin:0;">
+          <input id="useSession" type="checkbox" />
+          <span class="hint hint-left">APIキーをセッションに保存（ブラウザ再起動で削除）</span>
+        </label>
+        <button id="clear" class="ghost">Clear Key</button>
+      </div>
+
+      <hr class="sep" />
+
+      <div class="row" style="gap:10px; align-items:center;">
+        <label style="min-width:120px;">UI Language</label>
+        <select id="uiLang">
+          <option value="auto">Auto</option>
+          <option value="ja">日本語</option>
+          <option value="en">English</option>
+        </select>
+        <span class="hint">言語は即時適用されます</span>
+      </div>
+
+      <hr class="sep" />
+
+      <div class="cp">
+        <div class="cp-headline">
+          <h2>Custom Prompts (最大 30 件)</h2>
+          <div class="cp-actions">
+            <button id="exportPrompts" class="ghost">Export JSON</button>
+            <button id="importPrompts" class="ghost">Import JSON</button>
+            <input id="importPromptsFile" type="file" accept="application/json" class="hidden" />
+          </div>
+        </div>
+        <div class="cp-grid" id="cpGrid">
+          <!-- rows injected by JS -->
+        </div>
+      </div>
+
+      <div class="cp" id="officialSection">
+        <div class="cp-headline">
+          <h2>Official Templates</h2>
+          <span class="hint">チェックするとサイドパネルで使用できます</span>
+        </div>
+        <div class="cp-grid" id="officialGrid">
+          <!-- official templates injected by JS -->
+        </div>
+      </div>
+
+      <div class="row" style="justify-content: flex-end;">
+        <span class="hint">保存後はウィンドウを閉じてOKです</span>
+        <button id="save">Save Settings</button>
+        <button id="close" class="ghost">Close</button>
+      </div>
+    </div>
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+    <script src="key.js"></script>
+  </body>
+  
+</html>

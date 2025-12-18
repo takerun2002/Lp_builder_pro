@@ -140,3 +140,5 @@ const result = await runResearch(context, {
 - [Interactions API公式ドキュメント](https://ai.google.dev/gemini-api/docs/interactions)
 - [Deep Researchガイド](https://ai.google.dev/gemini-api/docs/deep-research)
 - [設計書](./research_agent_design.md)
+
+

@@ -1,0 +1,99 @@
+[
+  {
+    "label" : "Gemini/Gemini 2.5 Flash Image Preview",
+    "provider": "gemini",
+    "model": "gemini-2.5-flash-image-preview",
+    "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent",
+    "timeoutSec": 60,
+    "text_to_image": true,
+    "image_to_image": true,
+    "size": false,
+    "default": true,
+    "systemPrompt": "You are an expert assistant for single-shot image generation. Do not ask follow-up questions or wait for clarifications. Immediately produce images from the user's prompt and return them inline using inlineData (prefer image/png). Write any text in the user's language and keep responses focused, avoiding unnecessary disclaimers."
+  },
+  {
+    "label": "OpenRouter/gemini-2.5-flash-image-preview",
+    "provider": "openrouter",
+    "model": "google/gemini-2.5-flash-image-preview",
+    "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+    "timeoutSec": 60,
+    "text_to_image": true,
+    "image_to_image": true,
+    "size": false,
+    "systemPrompt": "You are an expert assistant for single-shot image generation. Do not ask follow-up questions or wait for clarifications. Immediately produce images from the user's prompt and return them inline using inlineData (prefer image/png). Write any text in the user's language and keep responses focused, avoiding unnecessary disclaimers."
+  },
+  {
+    "label": "fal-ai/Nano Banana (t2i)",
+    "provider": "fal",
+    "model": "fal-ai/nano-banana",
+    "endpoint": "https://queue.fal.run/fal-ai/nano-banana",
+    "timeoutSec": 60,
+    "text_to_image": true,
+    "image_to_image": false,
+    "size": false,
+    "systemPrompt": "You are an expert assistant for single-shot image generation. Do not ask follow-up questions or wait for clarifications. Immediately produce images from the user's prompt and return them inline using inlineData (prefer image/png). Write any text in the user's language and keep responses focused, avoiding unnecessary disclaimers."
+  },
+  {
+    "label": "fal-ai/Nano Banana (i2i)",
+    "provider": "fal",
+    "model": "fal-ai/nano-banana/edit",
+    "endpoint": "https://queue.fal.run/fal-ai/nano-banana/edit",
+    "timeoutSec": 60,
+    "text_to_image": false,
+    "image_to_image": true,
+    "size": false,
+    "systemPrompt": "You are an expert assistant for single-shot image generation. Do not ask follow-up questions or wait for clarifications. Immediately produce images from the user's prompt and return them inline using inlineData (prefer image/png). Write any text in the user's language and keep responses focused, avoiding unnecessary disclaimers."
+  },
+  {
+    "label": "fal-ai/bytedance/seedream/v4/text-to-image",
+    "provider": "fal",
+    "model": "fal-ai/bytedance/seedream/v4/text-to-image",
+    "endpoint": "https://queue.fal.run/fal-ai/bytedance/seedream/v4/text-to-image",
+    "timeoutSec": 60,
+    "text_to_image": true,
+    "image_to_image": false,
+    "size": true,
+    "default_height": 1080,
+    "default_width": 1920,
+    "systemPrompt": "You are an expert assistant for single-shot image generation. Do not ask follow-up questions or wait for clarifications. Immediately produce images from the user's prompt and return them inline using inlineData (prefer image/png). Write any text in the user's language and keep responses focused, avoiding unnecessary disclaimers."
+  },
+  {
+    "label": "fal-ai/bytedance/seedream/v4/edit (i2i)",
+    "provider": "fal",
+    "model": "fal-ai/bytedance/seedream/v4/edit",
+    "endpoint": "https://queue.fal.run/fal-ai/bytedance/seedream/v4/edit",
+    "timeoutSec": 90,
+    "text_to_image": false,
+    "image_to_image": true,
+    "size": true,
+    "default_height": 1080,
+    "default_width": 1920,
+    "systemPrompt": "You are an expert assistant for single-shot image generation. Do not ask follow-up questions or wait for clarifications. Immediately produce images from the user's prompt and return them inline using inlineData (prefer image/png). Write any text in the user's language and keep responses focused, avoiding unnecessary disclaimers."
+  },
+  {
+    "label": "fal-ai/nano-banana-pro (t2i)",
+    "provider": "fal",
+    "model": "fal-ai/nano-banana-pro",
+    "endpoint": "https://queue.fal.run/fal-ai/nano-banana-pro",
+    "timeoutSec": 300,
+    "text_to_image": true,
+    "image_to_image": false,
+    "size": false,
+    "aspectRatios": ["21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"],
+    "defaultAspectRatio": "1:1",
+    "systemPrompt": "You are an expert assistant for single-shot image generation. Do not ask follow-up questions or wait for clarifications. Immediately produce images from the user's prompt and return them inline using inlineData (prefer image/png). Write any text in the user's language and keep responses focused, avoiding unnecessary disclaimers."
+  },
+  {
+    "label": "fal-ai/nano-banana-pro/edit (i2i)",
+    "provider": "fal",
+    "model": "fal-ai/nano-banana-pro/edit",
+    "endpoint": "https://queue.fal.run/fal-ai/nano-banana-pro/edit",
+    "timeoutSec": 300,
+    "text_to_image": false,
+    "image_to_image": true,
+    "size": false,
+    "aspectRatios": ["auto", "21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"],
+    "defaultAspectRatio": "auto",
+    "systemPrompt": "You are an expert assistant for single-shot image generation. Do not ask follow-up questions or wait for clarifications. Immediately produce images from the user's prompt and return them inline using inlineData (prefer image/png). Write any text in the user's language and keep responses focused, avoiding unnecessary disclaimers."
+  }
+]

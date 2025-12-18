@@ -427,7 +427,7 @@ function scoreQuestion(partial: Partial<ChiebukuroResult>): ChiebukuroResult {
     depthScore,
     urgencyScore,
     quadrant,
-    severityKeywords: [...new Set(foundSeverityKeywords)],
+    severityKeywords: Array.from(new Set(foundSeverityKeywords)),
     category: partial.category,
     scrapedAt: partial.scrapedAt || new Date().toISOString(),
   };

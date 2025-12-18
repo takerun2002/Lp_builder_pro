@@ -1,0 +1,200 @@
+{
+  "version": "1.1.0",
+  "models": [
+    {
+      "id": "nvidia-nemotron-3-nano",
+      "label": "NVIDIA Nemotron 3 Nano",
+      "provider": "openrouter",
+      "model": "nvidia/nemotron-3-nano",
+      "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+      "category": "llm",
+      "capabilities": {
+        "text_generation": true,
+        "reasoning": true
+      },
+      "timeoutSec": 60,
+      "costTier": "low",
+      "default": true,
+      "description": "🆓 無料・高性能MoEモデル（推奨）"
+    },
+    {
+      "id": "gemini-3-pro-preview",
+      "label": "Gemini 3.0 Pro",
+      "provider": "gemini",
+      "model": "gemini-3-pro-preview",
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-preview:generateContent",
+      "category": "llm",
+      "capabilities": {
+        "text_generation": true,
+        "reasoning": true
+      },
+      "timeoutSec": 120,
+      "costTier": "high",
+      "description": "最高品質のテキスト生成・分析"
+    },
+    {
+      "id": "gemini-2.5-pro",
+      "label": "Gemini 2.5 Pro",
+      "provider": "gemini",
+      "model": "gemini-2.5-pro",
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent",
+      "category": "llm",
+      "capabilities": {
+        "text_generation": true,
+        "reasoning": true
+      },
+      "timeoutSec": 120,
+      "costTier": "medium",
+      "description": "バランス型、推論強化"
+    },
+    {
+      "id": "gemini-2.5-flash",
+      "label": "Gemini 2.5 Flash",
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+      "category": "llm",
+      "capabilities": {
+        "text_generation": true,
+        "reasoning": false
+      },
+      "timeoutSec": 60,
+      "costTier": "low",
+      "description": "高速・安価、下書き・テスト向け（Gemini）"
+    },
+    {
+      "id": "gemini-3-pro-image-preview",
+      "label": "Gemini 3.0 Pro Image (Nano Banana Pro)",
+      "provider": "gemini",
+      "model": "gemini-3-pro-image-preview",
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent",
+      "category": "image",
+      "capabilities": {
+        "text_to_image": true,
+        "image_to_image": true
+      },
+      "timeoutSec": 300,
+      "costTier": "high",
+      "aspectRatios": ["21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"],
+      "defaultAspectRatio": "1:1",
+      "systemPrompt": "You are an expert assistant for single-shot image generation. Do not ask follow-up questions or wait for clarifications. Immediately produce images from the user's prompt and return them inline using inlineData (prefer image/png). Write any text in the user's language and keep responses focused, avoiding unnecessary disclaimers.",
+      "description": "最高品質の画像生成"
+    },
+    {
+      "id": "gemini-2.5-flash-image-preview",
+      "label": "Gemini 2.5 Flash Image (Nano Banana)",
+      "provider": "gemini",
+      "model": "gemini-2.5-flash-image-preview",
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent",
+      "category": "image",
+      "capabilities": {
+        "text_to_image": true,
+        "image_to_image": true
+      },
+      "timeoutSec": 60,
+      "costTier": "low",
+      "default": true,
+      "aspectRatios": ["21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"],
+      "defaultAspectRatio": "1:1",
+      "systemPrompt": "You are an expert assistant for single-shot image generation. Do not ask follow-up questions or wait for clarifications. Immediately produce images from the user's prompt and return them inline using inlineData (prefer image/png). Write any text in the user's language and keep responses focused, avoiding unnecessary disclaimers.",
+      "description": "高速・安価な画像生成"
+    },
+    {
+      "id": "fal-nano-banana-pro",
+      "label": "fal.ai Nano Banana Pro",
+      "provider": "fal",
+      "model": "fal-ai/nano-banana-pro",
+      "endpoint": "https://queue.fal.run/fal-ai/nano-banana-pro",
+      "category": "image",
+      "capabilities": {
+        "text_to_image": true,
+        "image_to_image": false
+      },
+      "timeoutSec": 300,
+      "costTier": "medium",
+      "aspectRatios": ["21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"],
+      "defaultAspectRatio": "1:1",
+      "description": "fal.ai経由のNano Banana Pro"
+    },
+    {
+      "id": "fal-nano-banana-pro-edit",
+      "label": "fal.ai Nano Banana Pro Edit",
+      "provider": "fal",
+      "model": "fal-ai/nano-banana-pro/edit",
+      "endpoint": "https://queue.fal.run/fal-ai/nano-banana-pro/edit",
+      "category": "image",
+      "capabilities": {
+        "text_to_image": false,
+        "image_to_image": true
+      },
+      "timeoutSec": 300,
+      "costTier": "medium",
+      "aspectRatios": ["auto", "21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"],
+      "defaultAspectRatio": "auto",
+      "description": "画像編集・変換用"
+    },
+    {
+      "id": "fal-seedream-v4",
+      "label": "fal.ai Seedream v4.5",
+      "provider": "fal",
+      "model": "fal-ai/bytedance/seedream/v4/text-to-image",
+      "endpoint": "https://queue.fal.run/fal-ai/bytedance/seedream/v4/text-to-image",
+      "category": "image",
+      "capabilities": {
+        "text_to_image": true,
+        "image_to_image": false,
+        "size": true
+      },
+      "timeoutSec": 60,
+      "costTier": "medium",
+      "defaultWidth": 1920,
+      "defaultHeight": 1080,
+      "description": "ByteDance Seedream v4.5"
+    },
+    {
+      "id": "gemini-embedding-001",
+      "label": "Gemini Embedding",
+      "provider": "gemini",
+      "model": "gemini-embedding-001",
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+      "category": "embedding",
+      "capabilities": {
+        "rag": true
+      },
+      "timeoutSec": 30,
+      "costTier": "low",
+      "default": true,
+      "description": "ベクトル検索・RAG用"
+    }
+  ],
+  "presets": {
+    "research": "nvidia-nemotron-3-nano",
+    "copywriting": "gemini-3-pro-preview",
+    "image": "gemini-3-pro-image-preview",
+    "test": "nvidia-nemotron-3-nano",
+    "embedding": "gemini-embedding-001"
+  },
+  "taskMapping": {
+    "analysis": "nvidia-nemotron-3-nano",
+    "research": "nvidia-nemotron-3-nano",
+    "copywriting": "gemini-3-pro-preview",
+    "summarization": "nvidia-nemotron-3-nano",
+    "translation": "nvidia-nemotron-3-nano",
+    "image_generation": "gemini-3-pro-image-preview",
+    "image_editing": "gemini-3-pro-image-preview",
+    "draft": "nvidia-nemotron-3-nano",
+    "test": "nvidia-nemotron-3-nano",
+    "rag_query": "nvidia-nemotron-3-nano",
+    "embedding": "gemini-embedding-001"
+  },
+  "modelPriority": {
+    "free": ["nvidia-nemotron-3-nano"],
+    "low": ["gemini-2.5-flash", "gemini-2.5-pro"],
+    "high": ["gemini-3-pro-preview"]
+  },
+  "notes": {
+    "nvidia-nemotron-3-nano": "OpenRouterで無料利用可能。エージェント型AIシステム向けに最適化されたNVIDIAのオープンソースMoEモデル。基本的な推論・分析タスクに推奨。",
+    "gemini-3-pro-preview": "高品質なコピーライティング・深い推論が必要な場合に使用。",
+    "gemini-2.5-flash": "Gemini APIのみ使用時のフォールバック。"
+  }
+}

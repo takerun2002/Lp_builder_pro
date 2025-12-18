@@ -1,0 +1,29 @@
+{
+  "templates": [
+    {
+      "id": "character_portrait",
+      "title": "Portrait",
+      "body": "Create a polished portrait of the subject in the provided reference images. Preserve their facial structure, hairstyle, and key accessories while presenting a confident three-quarter pose from the waist up. Style the outfit as refined casual wear, use soft cinematic lighting with gentle rim light, and finish with a subtle warm gradient background for a studio-quality look."
+    },
+    {
+      "id": "character_reference_sheet",
+      "title": "Reference Sheet",
+      "body": "Use the provided reference image(s) as guidance for a clean character reference sheet.\nInclude the following views with consistent proportions and style:\n1. Face close-up, neutral expression\n2. Face close-up, smiling expression\n3. Full body front view\n4. Full body side view (profile)\n5. Full body back view\n\nEnsure each pose is clearly separated and aligned on the same white canvas."
+    },
+    {
+      "id": "product_spotlight",
+      "title": "Product Shot",
+      "body": "Render a premium hero shot of the referenced product for marketing use. Highlight its signature features, materials, and finish with crisp studio lighting and soft shadows. Place the item on a reflective surface against a tasteful gradient backdrop, add a faint glow behind the product, and compose the frame for magazine-quality presentation."
+    },
+    {
+      "id": "environment_concept",
+      "title": "Environment",
+      "body": "Paint a cinematic wide-shot environment inspired by the reference imagery. Showcase the terrain, architectural elements, and atmospheric conditions with a cohesive color palette and dramatic directional light. Include depth cues, foreground framing elements, and subtle environmental storytelling to make the scene feel alive and ready for concept art handoff."
+    },
+    {
+      "id": "collectible_figure",
+      "title": "Figure Concept",
+      "body": "Design a collectible figure concept based on the provided references. Present front, three-quarter, and rear angles on a shared neutral platform, keeping proportions identical across views. Emphasize sculpted details, layered costuming, and premium paint finishes, illuminated by crisp studio lighting with soft rim highlights."
+    }
+  ]
+}

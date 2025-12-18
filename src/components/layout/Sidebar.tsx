@@ -3,16 +3,20 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  FolderOpen, 
-  Images, 
-  Wand2, 
-  Search, 
+import {
+  LayoutDashboard,
+  FolderOpen,
+  Images,
+  Wand2,
+  Camera,
+  Microscope,
   Settings,
   BookOpen,
-  ChevronLeft, 
-  ChevronRight
+  ChevronLeft,
+  ChevronRight,
+  Cloud,
+  CloudOff,
+  Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -21,6 +25,7 @@ interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
+  description?: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -30,8 +35,9 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 const TOOL_ITEMS: NavItem[] = [
-  { href: "/dev/magic-pen", label: "Magic Pen (Dev)", icon: Wand2 },
-  { href: "/dev/scraper", label: "Scraper (Dev)", icon: Search },
+  { href: "/dev/magic-pen", label: "画像編集", icon: Wand2, description: "AIで画像を編集" },
+  { href: "/dev/lp-ocr", label: "LP取り込み", icon: Camera, description: "LPスクショ→テキスト抽出" },
+  { href: "/dev/research", label: "リサーチ", icon: Microscope, description: "AIで市場調査" },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
@@ -39,10 +45,36 @@ const BOTTOM_ITEMS: NavItem[] = [
   { href: "/docs", label: "ドキュメント", icon: BookOpen },
 ];
 
+interface GoogleConnectionStatus {
+  mode: "local" | "cloud" | "hybrid";
+  googleAuthenticated: boolean;
+  lastSyncAt?: string;
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [googleStatus, setGoogleStatus] = useState<GoogleConnectionStatus | null>(null);
+
+  // Google接続ステータスを取得
+  useEffect(() => {
+    const fetchGoogleStatus = async () => {
+      try {
+        const res = await fetch("/api/storage/status");
+        if (res.ok) {
+          const data = await res.json();
+          setGoogleStatus(data);
+        }
+      } catch {
+        // API未実装の場合は無視
+      }
+    };
+    fetchGoogleStatus();
+    // 5分ごとに更新
+    const interval = setInterval(fetchGoogleStatus, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // モバイル判定
   useEffect(() => {
@@ -50,22 +82,6 @@ export function Sidebar() {
       const nextIsMobile = window.innerWidth < 768;
       setIsMobile(nextIsMobile);
       if (nextIsMobile) setCollapsed(true);
-
-      // #region agent log (uiux)
-      fetch("/api/dev/debug-log", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: "debug-session",
-          runId: "uiux-pre",
-          hypothesisId: "H2",
-          location: "src/components/layout/Sidebar.tsx:checkMobile",
-          message: "sidebar-mobile-check",
-          data: { pathname, innerWidth: window.innerWidth, nextIsMobile },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
     };
     checkMobile();
     window.addEventListener("resize", checkMobile);
@@ -73,24 +89,7 @@ export function Sidebar() {
   }, [pathname]);
 
   const toggleSidebar = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-
-    // #region agent log (uiux)
-    fetch("/api/dev/debug-log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        sessionId: "debug-session",
-        runId: "uiux-pre",
-        hypothesisId: "H2",
-        location: "src/components/layout/Sidebar.tsx:toggleSidebar",
-        message: "sidebar-toggle",
-        data: { pathname, isMobile, collapsed: next },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
+    setCollapsed(!collapsed);
   };
 
   return (
@@ -156,7 +155,7 @@ export function Sidebar() {
 
           {/* Tools Group */}
           <div>
-            {!collapsed && <h3 className="px-3 mb-2 text-xs font-medium text-[#9FAEE1] uppercase">Tools (Dev)</h3>}
+            {!collapsed && <h3 className="px-3 mb-2 text-xs font-medium text-[#9FAEE1] uppercase">ツール</h3>}
             <div className="space-y-1">
               {TOOL_ITEMS.map((item) => (
                 <NavItem key={item.href} item={item} collapsed={collapsed} pathname={pathname} />
@@ -170,6 +169,13 @@ export function Sidebar() {
           {BOTTOM_ITEMS.map((item) => (
             <NavItem key={item.href} item={item} collapsed={collapsed} pathname={pathname} />
           ))}
+
+          {/* Google連携ステータス */}
+          <GoogleStatusIndicator
+            status={googleStatus}
+            collapsed={collapsed}
+          />
+
           {!collapsed && (
             <div className="pt-2 px-2 text-[10px] text-[#9FAEE1] opacity-80">
               ローカル版（買い切り）
@@ -191,8 +197,8 @@ function NavItem({ item, collapsed, pathname }: { item: NavItem; collapsed: bool
           href={item.href}
           className={cn(
             "flex items-center h-11 px-3 rounded-lg transition-all duration-200 group relative",
-            isActive 
-              ? "bg-[#605DFF1A] text-[#E6E8F0]" 
+            isActive
+              ? "bg-[#605DFF1A] text-[#E6E8F0]"
               : "text-[#9FAEE1] hover:bg-[#605DFF10] hover:text-[#E6E8F0]",
             collapsed && "justify-center px-0"
           )}
@@ -211,6 +217,74 @@ function NavItem({ item, collapsed, pathname }: { item: NavItem; collapsed: bool
       {collapsed && (
         <TooltipContent side="right" className="bg-[#131524] text-white border-[#303651]">
           {item.label}
+        </TooltipContent>
+      )}
+    </Tooltip>
+  );
+}
+
+function GoogleStatusIndicator({
+  status,
+  collapsed
+}: {
+  status: GoogleConnectionStatus | null;
+  collapsed: boolean;
+}) {
+  const isConnected = status?.googleAuthenticated ?? false;
+  const mode = status?.mode ?? "local";
+
+  // ローカルモードの場合はインジケーターを表示しない
+  if (mode === "local" && !status) {
+    return null;
+  }
+
+  const statusText = isConnected
+    ? mode === "hybrid" ? "Google連携中（ハイブリッド）" : "Google連携中"
+    : "未接続";
+
+  const lastSync = status?.lastSyncAt
+    ? `最終同期: ${new Date(status.lastSyncAt).toLocaleString("ja-JP", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`
+    : null;
+
+  return (
+    <Tooltip delayDuration={0}>
+      <TooltipTrigger asChild>
+        <Link
+          href="/dev/storage-settings"
+          className={cn(
+            "flex items-center h-11 px-3 rounded-lg transition-all duration-200",
+            "text-[#9FAEE1] hover:bg-[#605DFF10] hover:text-[#E6E8F0]",
+            collapsed && "justify-center px-0"
+          )}
+        >
+          {isConnected ? (
+            <Cloud size={20} className="shrink-0 text-emerald-400" />
+          ) : (
+            <CloudOff size={20} className="shrink-0 text-[#9FAEE1]" />
+          )}
+          {!collapsed && (
+            <div className="ml-3 flex flex-col animate-in fade-in slide-in-from-left-2 duration-300">
+              <span className={cn(
+                "text-sm font-medium",
+                isConnected ? "text-emerald-400" : "text-[#9FAEE1]"
+              )}>
+                {statusText}
+              </span>
+              {lastSync && (
+                <span className="text-[10px] text-[#9FAEE1] opacity-70">
+                  {lastSync}
+                </span>
+              )}
+            </div>
+          )}
+        </Link>
+      </TooltipTrigger>
+      {collapsed && (
+        <TooltipContent side="right" className="bg-[#131524] text-white border-[#303651]">
+          <div className="flex flex-col">
+            <span>{statusText}</span>
+            {lastSync && <span className="text-[10px] opacity-70">{lastSync}</span>}
+          </div>
         </TooltipContent>
       )}
     </Tooltip>

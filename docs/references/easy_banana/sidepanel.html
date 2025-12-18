@@ -1,0 +1,253 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="icons/icon128.png" sizes="128x128">
+    <link rel="icon" href="icons/icon128.png" sizes="32x32">
+    <title data-i18n="app.title">Easy Banana</title>
+    <style>
+      :root { color-scheme: light dark; --gen-btn-min: 104px; --seg-btn-w: 34px; }
+      *, *::before, *::after { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; overflow: hidden; }
+      .wrap { height: 100%; padding: 16px; display: flex; flex-direction: column; gap: 12px; max-width: 720px; margin: 0 auto; width: 100%; }
+      /* Full mode tweaks (when opened in a tab with ?full=1) */
+      body.full { overflow: auto; }
+      body.full .wrap { max-width: 1200px; width: min(1200px, 96vw); }
+      /* Narrow mode tweaks (when opened in detached narrow window) */
+      body.narrow .wrap { max-width: none; padding: 12px; }
+      .controls { display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+      .controls-top { display: flex; flex-direction: column; gap: 4px; flex: none; }
+      .stream { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 2px; }
+      h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: .2px; display: inline-flex; gap: 8px; align-items: baseline; }
+      .ver { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 999px; border: 1px solid rgba(128,128,128,.35); font-weight: 600; font-size: 11px; color: gray; }
+      .ver-link { margin-left: 6px; font-weight: 600; font-size: 11px; color: #1a73e8; text-decoration: none; }
+      .ver-link:hover { text-decoration: underline; }
+      .desc { color: gray; font-size: 12px; }
+      textarea { width: 100%; min-height: 80px; resize: vertical; padding: 10px 12px; font: inherit; border-radius: 8px; border: 1px solid rgba(128,128,128,.35); background: transparent; }
+      .row { display: flex; gap: 8px; align-items: center; }
+      .action-row { margin-top: 8px; align-items: center; gap: 10px; }
+      button { padding: 4px 4px; border-radius: 8px; border: 1px solid rgba(128,128,128,.35); background: #ffd54f; color: #1a1a1a; font-weight: 600; cursor: pointer; }
+      #gen { min-width: var(--gen-btn-min); }
+      button:disabled { opacity: .6; cursor: default; }
+      .cp-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+      .official-wrap { margin-top: 2px; }
+      .cp-btn { padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(128,128,128,.35); background: transparent; color: inherit; cursor: pointer; font-weight: 600; font-size: 12px; }
+      .cp-btn:hover { background: rgba(128,128,128,.08); }
+      .cp-btn--official { border-color: rgba(255,213,79,.5); }
+      .out { width: 100%; border: 1px solid rgba(128,128,128,.35); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; overflow: auto; }
+      .out.empty { color: gray; }
+      .hint { font-size: 12px; color: gray; margin-left: auto; }
+      .persist { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+      .persist > span { font-size: 12px; color: gray; }
+      .warn { color: #d32f2f; font-size: 12px; font-weight: 700; margin-top: 6px; }
+      .label { font-size: 12px; color: #1a1a1a; font-weight: 600; margin: 8px 2px 6px; }
+      .label-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; margin: 8px 2px 6px; }
+      .label-row .label { margin: 0; }
+      /* Tabs */
+      .tabbar { display: flex; align-items: center; gap: 0; padding: 2px 0; flex-wrap: wrap; }
+      /* Grouped look similar to .seg */
+      .tabbar.segmented { border: 1px solid rgba(128,128,128,.35); border-radius: 999px; overflow: hidden; }
+      .tab { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: 0; border-left: 1px solid rgba(128,128,128,.35); background: transparent; color: inherit; cursor: pointer; white-space: nowrap; }
+      .tab:first-child { border-left: 0; }
+      .tab.active { background: #ffd54f; color: #1a1a1a; }
+      .tab.generating::after { content: '●'; font-size: 10px; margin-left: 6px; color: #f97316; }
+      .tab .close { cursor: pointer; background: transparent; border: 0; font-weight: 700; color: inherit; padding: 0 4px; }
+      .add-tab { margin-left: 6px; padding: 2px 8px; border: 1px dashed rgba(128,128,128,.35); border-radius: 999px; background: transparent; color: inherit; cursor: pointer; }
+      .tabbar.disabled { opacity: .6; pointer-events: none; }
+      /* Segmented control for image count */
+      .seg { display: inline-flex; border: 1px solid rgba(128,128,128,.35); border-radius: 999px; overflow: hidden; }
+      .seg-btn { padding: 6px 0; width: var(--seg-btn-w); text-align: center; border: 0; background: transparent; color: inherit; font-weight: 700; font-size: 12px; cursor: pointer; }
+      .seg-btn + .seg-btn { border-left: 1px solid rgba(128,128,128,.35); }
+      .seg-btn.active { background: #ffd54f; color: #1a1a1a; }
+      .hidden { display: none; }
+      .model-slots { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+      .model-slot-row { display: flex; align-items: center; gap: 10px; }
+      .model-slot-row select { min-width: 220px; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(128,128,128,.35); background: transparent; color: inherit; }
+      .model-slot-empty { font-size: 12px; color: gray; margin-top: 4px; }
+      .model-more-btn { margin-left: auto; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(128,128,128,.35); background: transparent; color: inherit; cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px; }
+      .model-more-btn::after { content: '\25BE'; font-size: 10px; }
+      .model-more-btn.disabled { opacity: .5; cursor: not-allowed; }
+      .model-slot-details { margin: 2px 0 12px 48px; padding: 2px 12px; border: 1px solid rgba(128,128,128,.25); border-radius: 8px; display: flex; flex-direction: column; gap: 8px; background: rgba(128,128,128,.08); }
+      .model-slot-details.hidden { display: none; }
+      .model-size-inline { display: flex; align-items: center; gap: 8px; font-size: 12px; flex-wrap: wrap; }
+      .model-size-inline input { width: 90px; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(128,128,128,.35); background: transparent; color: inherit; }
+      .img-meta { font-size: 12px; color: gray; margin-top: 6px; display: inline-block; font-weight: 600; }
+      /* Keep thumbnails at a stable size so they don't jump larger on narrow side panel widths */
+      .imgs { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 160px)); gap: 12px; margin-top: 8px; justify-content: start; }
+      /* In full mode, allow a bit wider thumbnails but still cap size */
+      body.full .imgs { grid-template-columns: repeat(auto-fill, minmax(180px, 220px)); }
+      .img-card { border: 1px solid rgba(128,128,128,.25); border-radius: 10px; padding: 8px; background: rgba(128,128,128,.06); }
+      .img-card img { width: 100%; height: auto; display: block; border-radius: 8px; }
+      .img-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+      .img-actions button { padding: 5px 9px; border-radius: 8px; font-size: 12px; width: 100%; }
+      .img-actions .copy-btn { font-size: 11px; white-space: nowrap; }
+      .img-card img { cursor: zoom-in; }
+      /* Lightbox */
+      .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: grid; place-items: center; z-index: 9999; padding: 16px; }
+      /* Ensure hidden wins over .lightbox display */
+      .lightbox.hidden { display: none !important; }
+      .lightbox img { max-width: 95vw; max-height: 95vh; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.5); background: #000; }
+      .lb-close { position: absolute; top: 12px; right: 16px; background: rgba(0,0,0,.6); color: #fff; border: 0; border-radius: 999px; width: 32px; height: 32px; cursor: pointer; font-weight: 700; line-height: 32px; text-align: center; }
+      /* Reference image dropzone */
+      .dropzone { border: 2px dashed rgba(128,128,128,.5); border-radius: 10px; padding: 5px; text-align: center; color: gray; cursor: pointer; }
+      .dropzone.drag { background: rgba(128,128,128,.08); border-color: #ffd54f; color: #ffd54f; }
+      /* Reference list: smaller, fixed-size thumbnails */
+      .ref-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+      .ref-card { position: relative; width: 112px; border: 1px solid rgba(128,128,128,.25); border-radius: 10px; overflow: hidden; background: rgba(128,128,128,.06); }
+      .ref-card img { width: 100%; height: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; cursor: zoom-in; }
+      .ref-card .rm { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.7); color: #fff; border: 0; border-radius: 999px; width: 22px; height: 22px; cursor: pointer; font-weight: 700; display: flex; align-items: center; justify-content: center; line-height: 1; }
+      .ref-card .ed { position: absolute; top: 6px; left: 6px; background: rgba(0,0,0,.7); color: #fff; border: 0; border-radius: 999px; width: 22px; height: 22px; cursor: pointer; font-weight: 700; display: flex; align-items: center; justify-content: center; line-height: 1; }
+      /* Reorder affordances */
+      .ref-card { cursor: grab; }
+      .ref-card:active { cursor: grabbing; }
+      .ref-card.dragging { opacity: .6; outline: 2px dashed #ffd54f; }
+      .note { font-size: 12px; color: gray; border: 1px solid rgba(128,128,128,.25); border-left: 4px solid #ffd54f; padding: 8px 10px; border-radius: 6px; background: rgba(255,213,79,.08); }
+      .note b { color: #1a1a1a; }
+      /* Header alignment */
+      .head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+      /* Icon button + toast */
+      .icon-btn { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px solid rgba(128,128,128,.35); background: transparent; color: inherit; cursor: pointer; }
+      .icon-btn:hover { background: rgba(128,128,128,.08); }
+      .toast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); background: rgba(0,0,0,.82); color: #fff; border-radius: 8px; padding: 8px 12px; z-index: 10000; font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.35); }
+      @media (prefers-color-scheme: light) { .toast { background: rgba(0,0,0,.85); color: #fff; } }
+
+      /* Canvas modal */
+      .modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: grid; place-items: center; z-index: 10000; padding: 16px; }
+      .modal.hidden { display: none !important; }
+      .modal .panel { width: min(460px, 96vw); border-radius: 12px; border: 1px solid rgba(128,128,128,.25); background: #ffffff; color: #1a1a1a; padding: 14px; }
+      .modal .row { margin-top: 8px; }
+      .modal h2 { margin: 0 0 6px; font-size: 16px; }
+      .modal .field { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .modal input[type="number"] { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(128,128,128,.35); background: transparent; color: inherit; }
+      .modal .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+
+      /* High-contrast text in dark mode */
+      @media (prefers-color-scheme: dark) {
+        body { color: #ffffff; }
+        .desc, .hint, .label, .out.empty, .link { color: #ffffff; }
+        .ver-link { color: #8ab4f8; }
+        .note { color: #ffffff; border-color: rgba(255,255,255,.25); }
+        .note b { color: #ffffff; }
+        .dropzone { color: #ffffff; border-color: rgba(255,255,255,.5); }
+        .modal .panel { background: #1a1a1a; color: #e5e5e5; border-color: rgba(255,255,255,.2); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap" data-i18n-scope>
+      <div class="controls">
+        <header>
+          <div class="head-row">
+            <h1><span data-i18n="app.title">Easy Banana</span> <span id="ver" class="ver"></span><a class="ver-link" href="https://note.com/konho/n/n5e0138afcee5" target="_blank" rel="noopener">更新チェック</a></h1>
+            <div class="row" style="margin-left:auto; gap:8px;">
+              <button id="openStoryboard" class="ghost" title="Story Board">Story Board</button>
+              <button id="detachPanel" class="ghost" data-i18n="panel.detachPanel" title="タブを独立">タブを独立</button>
+              <button id="openKey" class="ghost" data-i18n="panel.settings" title="設定">設定</button>
+              <button id="showEnv" class="ghost hidden" title="動作環境を表示">環境情報</button>
+            </div>
+          </div>
+          <div id="needKeyWarn" class="warn hidden" data-i18n="panel.needKey">設定ボタンからAPIキーを入力してください</div>
+          <div id="needFalKeyWarn" class="warn hidden" data-i18n="panel.needFalKey">FAL APIキーが未入力です。設定ボタンからFAL APIキーを入力してください</div>
+        </header>
+        <div class="tabbar" id="tabbar" role="tablist" aria-label="Workspaces">
+          <!-- tabs rendered by JS -->
+        </div>
+        
+        <section class="controls-top">
+          <textarea id="prompt" data-i18n-attr="placeholder:panel.prompt.placeholder" placeholder="プロンプトを入力..."></textarea>
+          <div id="cpWrap" class="official-wrap hidden">
+            <div id="cpRow" class="cp-row"></div>
+          </div>
+          <div class="row action-row">
+            <button id="gen" data-i18n="panel.generate">Generate</button>
+            <button id="cancelGen" class="ghost hidden" data-i18n="common.cancel">Cancel</button>
+            <span class="hint" data-i18n="panel.hint.run">⌘/Ctrl+Enter で実行</span>
+          </div>
+        </section>
+      </div>
+      <div class="stream">
+        <section>
+          <!-- Image size inputs (optional, used by some providers like FAL) -->
+          <div class="row" style="align-items:center; gap:10px;">
+            <span class="label" data-i18n="panel.count">出力枚数</span>
+            <div id="imgCount" class="seg" role="group" aria-label="出力枚数">
+              <button type="button" class="seg-btn active" data-v="1">1</button>
+              <button type="button" class="seg-btn" data-v="2">2</button>
+              <button type="button" class="seg-btn" data-v="3">3</button>
+              <button type="button" class="seg-btn" data-v="4">4</button>
+            </div>
+          </div>
+          <div id="modelSlots" class="model-slots"></div>
+        </section>
+        <section>
+          <div class="label-row">
+            <div class="label" data-i18n="panel.refs">参考画像</div>
+            <div class="row" style="gap:8px;">
+              <button id="addCanvas" class="ghost" data-i18n="panel.addCanvas" title="指定サイズの白いキャンバスを追加">キャンバスを追加</button>
+              <button id="openLibrary" class="ghost" data-i18n="panel.openLibrary">ライブラリから選ぶ</button>
+            </div>
+          </div>
+          <div id="refDrop" class="dropzone" data-i18n="panel.drop.hint">ここに画像をドラッグ＆ドロップ（クリック/ペースト可）</div>
+          <input id="refFile" class="hidden" type="file" multiple accept="image/*" />
+          <div id="refList" class="ref-list"></div>
+        </section>
+        <section>
+          <div class="label-row">
+            <div class="label" data-i18n="panel.result">AIの返答</div>
+            <button id="copyResult" class="icon-btn" data-i18n-attr="title:common.copy" aria-label="Copy">📋</button>
+          </div>
+          <div id="result" class="out empty" data-i18n="panel.result.placeholder">結果がここに表示されます。</div>
+          <div id="imagesLabel" class="label hidden" data-i18n="panel.images">生成された画像（クリックで拡大）</div>
+          <div id="images" class="imgs"></div>
+        </section>
+      </div>
+    </div>
+    <!-- Lightbox for enlarged image viewing -->
+    <div id="lightbox" class="lightbox hidden" aria-hidden="true">
+      <button id="lightboxClose" class="lb-close" aria-label="閉じる">×</button>
+      <img id="lightboxImg" alt="生成画像の拡大表示" />
+    </div>
+    <!-- Toast -->
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+    <!-- Canvas size modal -->
+    <div id="canvasModal" class="modal hidden" aria-hidden="true">
+      <div class="panel" role="dialog" aria-modal="true" aria-labelledby="canvasTitle" tabindex="-1">
+        <h2 id="canvasTitle">キャンバスを追加</h2>
+        <div class="field">
+          <div class="row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+            <label class="label">Width (px)</label>
+            <input id="canvasW" type="number" min="64" max="4096" placeholder="例: 1024" />
+          </div>
+          <div class="row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+            <label class="label">Height (px)</label>
+            <input id="canvasH" type="number" min="64" max="4096" placeholder="例: 1024" />
+          </div>
+        </div>
+        <div class="row" style="gap:8px; align-items:center; margin-top:10px;">
+          <span class="hint">比率プリセット</span>
+          <div id="ratioRow" class="seg" role="group" aria-label="アスペクト比">
+            <button type="button" class="seg-btn" data-ratio="1:1">1:1</button>
+            <button type="button" class="seg-btn" data-ratio="4:3">4:3</button>
+            <button type="button" class="seg-btn" data-ratio="3:4">3:4</button>
+            <button type="button" class="seg-btn" data-ratio="16:9">16:9</button>
+            <button type="button" class="seg-btn" data-ratio="9:16">9:16</button>
+            <button type="button" class="seg-btn" data-ratio="1:1.4">1:1.4</button>
+            <button type="button" class="seg-btn" data-ratio="1.4:1">1.4:1</button>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="canvasCancel" class="ghost">キャンセル</button>
+          <button id="canvasCreate">作成</button>
+        </div>
+      </div>
+    </div>
+    <script src="i18n.js"></script>
+    <script src="sidepanel.util.js"></script>
+    <script src="sidepanel.js"></script>
+    <script src="sidepanel.refs.js"></script>
+    <script src="sidepanel.upload.js"></script>
+    <script src="sidepanel.generate.js"></script>
+  </body>
+</html>

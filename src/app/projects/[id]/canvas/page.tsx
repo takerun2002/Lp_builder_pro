@@ -337,15 +337,15 @@ export default function CanvasPage() {
       }
     };
 
-    const handleMouseDown = (opt: FabricEvent) => {
-      if (isPanningRef.current && opt.e) {
+    const handleMouseDown = (opt?: FabricEvent) => {
+      if (isPanningRef.current && opt?.e) {
         canvas.defaultCursor = "grabbing";
         lastPosRef.current = { x: opt.e.clientX, y: opt.e.clientY };
       }
     };
 
-    const handleMouseMove = (opt: FabricEvent) => {
-      if (isPanningRef.current && opt.e && (opt.e as MouseEvent).buttons === 1) {
+    const handleMouseMove = (opt?: FabricEvent) => {
+      if (isPanningRef.current && opt?.e && (opt.e as MouseEvent).buttons === 1) {
         const e = opt.e as MouseEvent;
         const dx = e.clientX - lastPosRef.current.x;
         const dy = e.clientY - lastPosRef.current.y;
@@ -362,7 +362,8 @@ export default function CanvasPage() {
     };
 
     // Wheel: Pan (normal) / Zoom (Ctrl/Cmd)
-    const handleWheel = (opt: FabricEvent) => {
+    const handleWheel = (opt?: FabricEvent) => {
+      if (!opt?.e) return;
       const e = opt.e as WheelEvent;
       e.preventDefault();
 

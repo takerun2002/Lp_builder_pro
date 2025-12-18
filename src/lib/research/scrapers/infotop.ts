@@ -508,3 +508,5 @@ export function extractPatterns(
 
   return { commonSections, priceRange, headlinePatterns: headlines };
 }
+
+

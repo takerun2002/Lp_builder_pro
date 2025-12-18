@@ -68,7 +68,7 @@ export async function convertToKnowledge(
 
   if (input.type === "url") {
     const scraped = await scrapeUrl(input.content);
-    rawContent = scraped?.markdown || scraped?.content || "";
+    rawContent = scraped?.markdown || scraped?.html || "";
     if (!rawContent) {
       throw new Error("URLからコンテンツを取得できませんでした");
     }

@@ -310,7 +310,7 @@ export default function SwipeFilesPage() {
   const handleDeleteSelected = async () => {
     if (selectedIds.size === 0) return;
     if (!confirm(`${selectedIds.size}件のスワイプファイルを削除しますか？`)) return;
-    for (const id of selectedIds) {
+    for (const id of Array.from(selectedIds)) {
       await handleDelete(id);
     }
   };

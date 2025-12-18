@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LP Builder Pro - 要件定義書</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Hiragino Sans', 'Noto Sans JP', sans-serif; line-height: 1.8; color: #1a202c; background: #fff; font-size: 14px; }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px; }
+        .cover { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; page-break-after: always; background: linear-gradient(135deg, #1a365d 0%, #2d4a6f 100%); color: white; margin: -40px; padding: 40px; }
+        .cover h1 { font-size: 3.5rem; font-weight: 700; margin-bottom: 10px; }
+        .cover .subtitle { font-size: 1.3rem; opacity: 0.9; margin-bottom: 60px; }
+        .cover .doc-title { font-size: 2.5rem; font-weight: 700; margin-bottom: 10px; }
+        .cover .doc-subtitle { font-size: 1rem; opacity: 0.8; margin-bottom: 80px; }
+        .cover .meta { font-size: 0.9rem; opacity: 0.7; }
+        .toc { page-break-after: always; padding: 40px 0; }
+        .toc h2 { font-size: 1.8rem; color: #1a365d; margin-bottom: 30px; padding-bottom: 10px; border-bottom: 3px solid #1a365d; }
+        .toc ul { list-style: none; }
+        .toc li { padding: 8px 0; border-bottom: 1px dotted #e2e8f0; }
+        .toc a { color: #2d4a6f; text-decoration: none; display: flex; justify-content: space-between; }
+        h1 { font-size: 2rem; color: #1a365d; margin: 50px 0 25px; padding-bottom: 10px; border-bottom: 3px solid #1a365d; page-break-after: avoid; }
+        h2 { font-size: 1.5rem; color: #2d4a6f; margin: 40px 0 20px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; }
+        h3 { font-size: 1.2rem; color: #4a5568; margin: 30px 0 15px; }
+        h4 { font-size: 1.1rem; color: #4a5568; margin: 20px 0 10px; }
+        p { margin: 15px 0; text-align: justify; }
+        blockquote { background: linear-gradient(135deg, #ebf8ff 0%, #e6fffa 100%); border-left: 4px solid #3182ce; padding: 20px 25px; margin: 25px 0; border-radius: 0 8px 8px 0; font-size: 1.1rem; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 0.9rem; }
+        th { background: #1a365d; color: white; padding: 12px 15px; text-align: left; font-weight: 500; }
+        td { padding: 12px 15px; border-bottom: 1px solid #e2e8f0; }
+        tr:nth-child(even) { background: #f8fafc; }
+        tr:hover { background: #edf2f7; }
+        ul, ol { margin: 15px 0 15px 25px; }
+        li { margin: 8px 0; }
+        code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'Consolas', monospace; font-size: 0.9em; color: #e53e3e; }
+        pre { background: #1a202c; color: #e2e8f0; padding: 20px; border-radius: 8px; overflow-x: auto; margin: 20px 0; }
+        pre code { background: none; color: inherit; padding: 0; }
+        .info-box { background: #dbeafe; border: 1px solid #3b82f6; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .feature-box { background: #f0fff4; border: 2px solid #38a169; border-radius: 12px; padding: 25px; margin: 25px 0; }
+        .feature-box h4 { color: #276749; margin-top: 0; }
+        .page-break { page-break-before: always; }
+        .footer { text-align: center; color: #718096; font-size: 0.9rem; margin-top: 60px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+        @media print { body { font-size: 11pt; } .container { max-width: 100%; padding: 0; } .cover { margin: 0; } h1, h2, h3 { page-break-after: avoid; } table, pre, blockquote { page-break-inside: avoid; } }
+    </style>
+</head>
+<body>
+    <div class="cover">
+        <h1>LP Builder Pro</h1>
+        <p class="subtitle">AI-Powered Landing Page Creation Tool</p>
+        <p class="doc-title">要 件 定 義 書</p>
+        <p class="doc-subtitle">Product Requirements Document</p>
+        <div class="meta">
+            <p>Version 1.0</p>
+            <p>作成日: 2025年12月12日</p>
+        </div>
+    </div>
+    <div class="container">
+        <div class="toc">
+            <h2>目次</h2>
+            <ul>
+                <li><a href="#s1"><span>1. エグゼクティブサマリー</span></a></li>
+                <li><a href="#s2"><span>2. プロダクト概要</span></a></li>
+                <li><a href="#s3"><span>3. 機能要件</span></a></li>
+                <li><a href="#s4"><span>4. 非機能要件</span></a></li>
+                <li><a href="#s5"><span>5. UI/UX設計方針</span></a></li>
+                <li><a href="#s6"><span>6. 講座・ボーナスコンテンツ</span></a></li>
+                <li><a href="#s7"><span>7. 開発ロードマップ</span></a></li>
+                <li><a href="#s8"><span>8. リスクと対策</span></a></li>
+                <li><a href="#s9"><span>9. 成功指標（KPI）</span></a></li>
+                <li><a href="#s10"><span>10. 付録</span></a></li>
+            </ul>
+        </div>
+
+        <h1 id="s1">1. エグゼクティブサマリー</h1>
+        <h2>1.1 プロダクトビジョン</h2>
+        <p>LP Builder Proは、<strong>Webデザイナー・マーケター・ディレクターのクライアントワークを革新的に効率化する</strong>AI搭載LP制作ツールです。</p>
+        <blockquote><strong>「マジックペンで"ここ"を指すだけ。言語化の壁を超えて、思った通りのLPを高速で作る」</strong></blockquote>
+        <p>従来のAIツールでは実現できなかった<strong>直感的な修正指示</strong>を可能にし、クライアントワークの生産性を劇的に向上させます。</p>
+
+        <h2>1.2 解決する課題</h2>
+        <table>
+            <tr><th>課題</th><th>詳細</th></tr>
+            <tr><td>低単価案件への疲弊</td><td>信頼構築のため断れない案件が、高単価案件のリソースを圧迫</td></tr>
+            <tr><td>言語化の壁</td><td>「ここを直して」をAIに伝えるのが難しく、時間がかかる</td></tr>
+            <tr><td>リサーチの非効率</td><td>スワイプファイル収集・整理に膨大な時間を消費</td></tr>
+            <tr><td>クライアントとの認識ズレ</td><td>修正の往復が多く、コミュニケーションコストが高い</td></tr>
+            <tr><td>レスポンシブ確認の煩雑さ</td><td>デバイス間の見え方確認に手間がかかる</td></tr>
+        </table>
+
+        <h2>1.3 市場ポジショニング</h2>
+        <div class="feature-box">
+            <h4>💰 価格: 29,800円（買い切り）で「市場価格破壊」を実現</h4>
+            <ul>
+                <li>外注1回分以下の投資で、無制限にLPを制作可能</li>
+                <li>Google Cloud <strong>$300無料クレジット</strong>を活用し、初期90日間は実質無料</li>
+                <li>買い切りモデルのため、ランニングコストを気にせず使い倒せる</li>
+            </ul>
+        </div>
+
+        <h1 id="s2" class="page-break">2. プロダクト概要</h1>
+        <h2>2.1 基本情報</h2>
+        <table>
+            <tr><th>項目</th><th>内容</th></tr>
+            <tr><td>プロダクト名</td><td>LP Builder Pro（仮称）</td></tr>
+            <tr><td>カテゴリ</td><td>AI LP制作ツール / クリエイティブ支援ツール</td></tr>
+            <tr><td>価格</td><td>29,800円（税込・買い切り）</td></tr>
+            <tr><td>提供形態</td><td>ローカル環境動作（Next.js + ローカルサーバー）</td></tr>
+            <tr><td>動作環境</td><td>Windows / macOS / Linux（Node.js 18以上）</td></tr>
+            <tr><td>推奨エディタ</td><td>Cursor（プロジェクト管理・追加カスタマイズ用）</td></tr>
+            <tr><td>必要API</td><td>Google Cloud API（Gemini 3 Pro Image Preview）</td></tr>
+        </table>
+
+        <h2>2.2 ターゲットユーザー</h2>
+        <h3>プライマリーターゲット</h3>
+        <ul>
+            <li><strong>Webデザイナー</strong>（実務者・フリーランス）</li>
+            <li><strong>Webマーケター</strong>（LINEマーケ界隈・DRM界隈）</li>
+            <li><strong>ディレクターポジション</strong>のクライアントワーカー</li>
+            <li><strong>ワンマン</strong>で複数案件を回している事業者</li>
+        </ul>
+        <h3>セカンダリーターゲット</h3>
+        <ul>
+            <li>一人起業家（LP外注費を削減したい層）</li>
+            <li>スタートアップのマーケティング担当</li>
+            <li>Web制作会社の効率化を図りたい経営者</li>
+        </ul>
+
+        <h2>2.3 競合分析</h2>
+        <table>
+            <tr><th>ツール</th><th>特徴</th><th>弱点</th><th>LP Builder Proの優位性</th></tr>
+            <tr><td>STUDIO / Wix</td><td>ノーコードでデザイン自由</td><td>学習コスト高い</td><td>AI自動生成で即座に完成</td></tr>
+            <tr><td>ペライチ</td><td>簡単、低価格</td><td>テンプレ感が強い</td><td>スワイプファイルで独自性担保</td></tr>
+            <tr><td>Canva</td><td>手軽、テンプレ豊富</td><td>LP特化ではない</td><td>LP制作に最適化されたワークフロー</td></tr>
+            <tr><td>ChatGPT / Claude</td><td>柔軟、高性能</td><td>「ここ直して」の指示が困難</td><td><strong>マジックペンで視覚的に指示可能</strong></td></tr>
+            <tr><td>Cursor / v0</td><td>開発者向け、自由度高い</td><td>非エンジニアにはハードル高</td><td>デザイナー向けUI + Cursor連携</td></tr>
+        </table>
+
+        <h2>2.4 差別化ポイント</h2>
+        <ol>
+            <li><strong>マジックペン機能</strong>: 視覚的に「ここ」を指定して修正指示。言語化の壁を完全に解消。</li>
+            <li><strong>LP丸ごとスクレイピング</strong>: URLを入力するだけで、テキスト・画像・構成を一括取得。</li>
+            <li><strong>カラースポイト</strong>: 参考画像やLPから色を直接取得し、カラーパレットに追加。</li>
+            <li><strong>ABCD同時比較</strong>: 4パターンを並べて比較検討。意思決定を高速化。</li>
+            <li><strong>Cursor連携最適化</strong>: プロジェクト構成がCursorで開きやすい設計。</li>
+            <li><strong>買い切り + GCP無料クレジット</strong>: 29,800円で無制限利用。初期90日は実質無料。</li>
+        </ol>
+
+        <h1 id="s3" class="page-break">3. 機能要件</h1>
+        <h2>3.1 MVP機能一覧</h2>
+        <table>
+            <tr><th>#</th><th>機能名</th><th>概要</th><th>優先度</th></tr>
+            <tr><td>1</td><td>セクション単位制作</td><td>LPをセクションごとに分割して制作。連結プレビューで全体確認可能。</td><td>必須</td></tr>
+            <tr><td>2</td><td><strong>マジックペン</strong></td><td>ペンで領域を囲んで修正指示。座標ベースでAIに伝達。<strong>最大の差別化機能。</strong></td><td>必須</td></tr>
+            <tr><td>3</td><td>スワイプファイル管理</td><td>画像・LPスクショをアップロードし、コンテキストとして活用。</td><td>必須</td></tr>
+            <tr><td>4</td><td><strong>LP丸ごとスクレイピング</strong></td><td>URLを入力 → テキスト + 画像 + 構成を一括取得。</td><td>必須</td></tr>
+            <tr><td>5</td><td>スタイル自動抽出</td><td>参考LPからカラー・フォント・レイアウトを自動分析。</td><td>必須</td></tr>
+            <tr><td>6</td><td><strong>カラースポイト</strong></td><td>EyeDropper API + Canvas APIで画像から色を取得。</td><td>必須</td></tr>
+            <tr><td>7</td><td>ABCD同時比較</td><td>最大4パターンを並べて比較。不要なものを切り捨てて最終決定。</td><td>必須</td></tr>
+            <tr><td>8</td><td>レスポンシブプレビュー</td><td>PC / タブレット / スマホの見え方をワンクリック切り替え。</td><td>必須</td></tr>
+            <tr><td>9</td><td>書き出し機能</td><td>PNG（セクション単位）/ PDF（全体）/ HTML・CSS（実装用）</td><td>必須</td></tr>
+            <tr><td>10</td><td>デザイントークン設定</td><td>カラーパレット・フォント・余白ルールを設定し全体に適用。</td><td>必須</td></tr>
+            <tr><td>11</td><td>クイック修正プリセット</td><td>「CTA強調」「余白調整」などワンクリック修正。</td><td>必須</td></tr>
+            <tr><td>12</td><td><strong>競合LP自動分析</strong></td><td>URL → 構成分解 → セクション抽出。リサーチ自動化。</td><td>必須</td></tr>
+        </table>
+
+        <h2>3.2 Phase 2 機能一覧</h2>
+        <table>
+            <tr><th>#</th><th>機能名</th><th>概要</th><th>優先度</th></tr>
+            <tr><td>13</td><td><strong>クライアントプレビューリンク</strong></td><td>共有リンクを発行。クライアントもマジックペンでコメント可能。</td><td>高</td></tr>
+            <tr><td>14</td><td><strong>リサーチ自動化スクレーパー</strong></td><td>「〇〇業界のLP探して」→ AIが自動収集・提案。<strong>神機能。</strong></td><td>高</td></tr>
+            <tr><td>15</td><td>バージョン履歴</td><td>セクションごとに履歴管理。「この状態に戻す」が可能。</td><td>中</td></tr>
+            <tr><td>16</td><td>Figma形式書き出し</td><td>デザイナーへの引き継ぎ用。.fig or SVG形式で出力。</td><td>中</td></tr>
+            <tr><td>17</td><td>音声指示モード</td><td>マジックペン + 音声で修正指示。Whisper API使用。</td><td>低</td></tr>
+            <tr><td>18</td><td>AIレビュー & 改善提案</td><td>プロ視点でLPをレビュー。改善箇所をハイライト表示。</td><td>低</td></tr>
+        </table>
+
+        <h2 class="page-break">3.3 各機能の詳細仕様</h2>
+        <h3>3.3.1 マジックペン機能 ⭐ 最重要</h3>
+        <p>本プロダクト<strong>最大の差別化ポイント</strong>。視覚的に「ここ」を指定して修正指示を出せる機能。</p>
+        <div class="info-box">
+            <strong>座標ベース（バウンディングボックス方式）を採用</strong>
+            <ul>
+                <li>セグメンテーション方式より実装難易度が低く、動作が確実</li>
+                <li>API消費も少なく、コスパが良い</li>
+                <li>Geminiとの相性が良い（座標指定プロンプトが得意）</li>
+            </ul>
+        </div>
+        <h4>処理フロー</h4>
+        <pre><code>1. ユーザーがマジックペンで領域を囲む（フリーハンド or 矩形）
+2. 囲んだ領域の座標（x, y, width, height）を取得
+3. 元画像全体 + 座標情報 + 修正指示テキストをGeminiに送信
+4. Geminiが画像全体を再生成（指定領域が修正された状態で）
+5. 差分をハイライト表示（オプション）</code></pre>
+        <h4>プロンプト例</h4>
+        <pre><code>この画像の座標(x:100, y:200, w:300, h:150)の領域について、
+ユーザーから以下の修正指示があります：『もっと目立たせて』。
+この領域を改善した画像全体を生成してください。</code></pre>
+        <h4>UI要件</h4>
+        <ul>
+            <li>ペンツール（フリーハンド描画）</li>
+            <li>矩形選択ツール（範囲指定）</li>
+            <li>消しゴムツール（選択解除）</li>
+            <li>テキスト入力欄（修正指示）</li>
+            <li>クイック修正プリセットボタン</li>
+        </ul>
+
+        <h3>3.3.2 LP丸ごとスクレイピング機能</h3>
+        <p>URLを入力するだけで、LPの全要素を一括取得する機能。<strong>リサーチ工程を大幅に効率化。</strong></p>
+        <h4>取得データ</h4>
+        <ul>
+            <li>フルページスクリーンショット（1枚の長い画像）</li>
+            <li>セクションごとに分割された画像</li>
+            <li>テキストコンテンツ（OCR抽出）</li>
+            <li>カラーパレット（使用色を自動抽出）</li>
+            <li>フォント情報（可能な範囲で）</li>
+            <li>レイアウト構成（ヒーロー → 課題 → 解決策 → CTAなど）</li>
+        </ul>
+        <h4>技術実装</h4>
+        <table>
+            <tr><th>技術</th><th>用途</th></tr>
+            <tr><td>Playwright</td><td>ヘッドレスブラウザでページレンダリング</td></tr>
+            <tr><td>GoFullPage方式</td><td>自動スクロール + 画像結合</td></tr>
+            <tr><td>Gemini 2.5 Flash</td><td>テキスト抽出（OCR）+ 構成分析</td></tr>
+            <tr><td>Canvas API</td><td>画像からカラーパレット抽出</td></tr>
+        </table>
+
+        <h3>3.3.3 カラースポイト機能</h3>
+        <table>
+            <tr><th>技術</th><th>用途</th></tr>
+            <tr><td>EyeDropper API</td><td>Chrome標準APIでブラウザ上の任意の色を取得</td></tr>
+            <tr><td>Canvas API</td><td>アップロード画像のピクセル色を取得</td></tr>
+            <tr><td>色変換</td><td>HEX / RGB / HSL変換対応</td></tr>
+        </table>
+
+        <h3>3.3.4 ABCD同時比較機能</h3>
+        <ul>
+            <li>1つのセクションに対して最大4パターン（A/B/C/D）を同時生成</li>
+            <li>グリッドビューで並べて比較</li>
+            <li>各パターンに対して個別にマジックペン修正可能</li>
+            <li>不要なパターンをワンクリックで削除</li>
+        </ul>
+
+        <h3>3.3.5 レスポンシブプレビュー</h3>
+        <table>
+            <tr><th>デバイス</th><th>サイズ</th></tr>
+            <tr><td>Desktop</td><td>1920px / 1440px / 1280px</td></tr>
+            <tr><td>Tablet</td><td>1024px / 768px</td></tr>
+            <tr><td>Mobile</td><td>430px / 390px / 375px</td></tr>
+        </table>
+
+        <h3>3.3.6 書き出し機能</h3>
+        <table>
+            <tr><th>形式</th><th>用途</th><th>技術</th></tr>
+            <tr><td>PNG</td><td>セクション単位の確認用</td><td>html2canvas</td></tr>
+            <tr><td>PDF</td><td>提案書、印刷用</td><td>jsPDF</td></tr>
+            <tr><td>HTML/CSS</td><td>実装引き継ぎ</td><td>HTMLテンプレート</td></tr>
+            <tr><td>Figma（Phase 2）</td><td>デザイナー連携</td><td>.fig / SVG</td></tr>
+        </table>
+
+        <h3>3.3.7 競合LP自動分析</h3>
+        <ul>
+            <li>セクション構成（ヒーロー → 課題 → 解決策 → 実績 → CTA など）</li>
+            <li>各セクションの役割・訴求ポイント</li>
+            <li>使用されているデザインパターン</li>
+            <li>カラースキーム・フォント使用傾向</li>
+        </ul>
+
+        <h3>3.3.8 クイック修正プリセット</h3>
+        <table>
+            <tr><th>プリセット名</th><th>動作</th></tr>
+            <tr><td>もっと目立たせる</td><td>コントラスト強調、サイズアップ</td></tr>
+            <tr><td>CTA強調</td><td>ボタンを大きく、色を目立たせる</td></tr>
+            <tr><td>余白を広げる</td><td>上下左右の余白を増やす</td></tr>
+            <tr><td>余白を詰める</td><td>余白を減らしてコンパクトに</td></tr>
+            <tr><td>フォントサイズ上げる</td><td>テキストを大きく</td></tr>
+            <tr><td>シンプルにする</td><td>装飾を減らしてクリーンに</td></tr>
+        </table>
+
+        <h1 id="s4" class="page-break">4. 非機能要件</h1>
+        <h2>4.1 技術スタック</h2>
+        <h3>フロントエンド</h3>
+        <table>
+            <tr><th>技術</th><th>バージョン</th><th>用途</th></tr>
+            <tr><td>Next.js</td><td>14.x（App Router）</td><td>フレームワーク</td></tr>
+            <tr><td>React</td><td>18.x</td><td>UIライブラリ</td></tr>
+            <tr><td>Tailwind CSS</td><td>3.x</td><td>スタイリング</td></tr>
+            <tr><td>shadcn/ui</td><td>latest</td><td>UIコンポーネント</td></tr>
+            <tr><td>Zustand</td><td>4.x</td><td>状態管理</td></tr>
+            <tr><td>Fabric.js</td><td>5.x</td><td>Canvas操作（マジックペン）</td></tr>
+            <tr><td>React DnD</td><td>16.x</td><td>ドラッグ&ドロップ</td></tr>
+        </table>
+        <h3>バックエンド</h3>
+        <table>
+            <tr><th>技術</th><th>用途</th></tr>
+            <tr><td>Next.js API Routes</td><td>APIエンドポイント</td></tr>
+            <tr><td>SQLite + better-sqlite3</td><td>ローカルDB</td></tr>
+            <tr><td>ファイルシステム</td><td>画像・スワイプファイル保存</td></tr>
+        </table>
+        <h3>AI連携</h3>
+        <table>
+            <tr><th>モデル</th><th>用途</th></tr>
+            <tr><td><strong>Gemini 3 Pro Image Preview</strong></td><td>画像生成・編集（メイン）。2K/4K出力、テキストレンダリング最強。</td></tr>
+            <tr><td><strong>Gemini 2.5 Flash</strong></td><td>OCR、高速テキスト処理、構成分析。</td></tr>
+            <tr><td>Gemini 3 Pro</td><td>複雑な推論、構成提案（オプション）。</td></tr>
+        </table>
+        <h3>スクレイピング・画像処理</h3>
+        <table>
+            <tr><th>技術</th><th>用途</th></tr>
+            <tr><td>Playwright</td><td>ヘッドレスブラウザ、フルページキャプチャ</td></tr>
+            <tr><td>html2canvas / dom-to-image</td><td>DOM→画像変換</td></tr>
+            <tr><td>jsPDF</td><td>PDF生成</td></tr>
+            <tr><td>sharp</td><td>画像処理・リサイズ</td></tr>
+        </table>
+
+        <h2>4.2 パフォーマンス要件</h2>
+        <table>
+            <tr><th>項目</th><th>目標値</th><th>備考</th></tr>
+            <tr><td>アプリ起動時間</td><td>5秒以内</td><td>ローカル環境</td></tr>
+            <tr><td>セクション生成時間</td><td>10〜30秒</td><td>AI生成依存</td></tr>
+            <tr><td>マジックペン修正適用</td><td>5〜15秒</td><td>領域サイズ依存</td></tr>
+            <tr><td>LP丸ごとスクレイピング</td><td>30〜60秒</td><td>ページ長さ依存</td></tr>
+            <tr><td>PNG書き出し</td><td>3秒以内</td><td>セクション単位</td></tr>
+            <tr><td>PDF書き出し</td><td>10秒以内</td><td>全体書き出し</td></tr>
+            <tr><td>レスポンシブ切り替え</td><td>1秒以内</td><td>即時反映</td></tr>
+        </table>
+
+        <h2>4.3 セキュリティ要件</h2>
+        <ul>
+            <li>APIキーはローカルに保存（.envファイル）、外部送信しない</li>
+            <li>生成データはすべてローカル保存</li>
+            <li>クラウドへのアップロードはユーザーの明示的な操作が必要</li>
+            <li>スクレイピング時はrobots.txtを尊重（オプション設定）</li>
+        </ul>
+
+        <h2>4.4 動作環境</h2>
+        <table>
+            <tr><th>項目</th><th>要件</th></tr>
+            <tr><td>OS</td><td>Windows 10/11、macOS 12以上、Ubuntu 20.04以上</td></tr>
+            <tr><td>Node.js</td><td>18.x以上（20.x推奨）</td></tr>
+            <tr><td>メモリ</td><td>8GB以上（16GB推奨）</td></tr>
+            <tr><td>ストレージ</td><td>10GB以上の空き容量</td></tr>
+            <tr><td>ブラウザ</td><td>Chrome 120以上（EyeDropper API対応）</td></tr>
+            <tr><td>推奨エディタ</td><td>Cursor</td></tr>
+        </table>
+
+        <h1 id="s5" class="page-break">5. UI/UX設計方針</h1>
+        <h2>5.1 設計思想</h2>
+        <blockquote><strong>「強いデザイナーを邪魔しない」</strong>を最優先に設計</blockquote>
+        <h3>設計原則</h3>
+        <ul>
+            <li>機能は豊富に、UIはシンプルに</li>
+            <li>よく使う機能は1クリックで、高度な機能は必要なときだけ表示</li>
+            <li>AIの提案は「押し付け」ではなく「オプション」として提示</li>
+            <li>ショートカットキーを充実させ、パワーユーザーの効率を最大化</li>
+        </ul>
+
+        <h2>5.2 画面構成</h2>
+        <pre><code>┌─────────────────────────────────────────────────────────┐
+│ [ツールバー] 保存 | 書き出し | プレビュー切替 | 設定    │
+├────────┬──────────────────────────────┬─────────────────┤
+│  左    │                              │   右            │
+│  サイド │      メインキャンバス        │   サイドバー    │
+│  バー  │      （LPプレビュー）         │   （ツール/     │
+│        │                              │    プロパティ） │
+│プロジェ │                              │                 │
+│クト一覧 │                              │                 │
+│スワイプ │                              │                 │
+│ファイル │                              │                 │
+├────────┴──────────────────────────────┴─────────────────┤
+│ [セクション一覧] サムネイル表示 / 並び替え可能          │
+└─────────────────────────────────────────────────────────┘</code></pre>
+        <h3>主要画面一覧</h3>
+        <ol>
+            <li><strong>ダッシュボード</strong>: プロジェクト一覧、最近のファイル</li>
+            <li><strong>エディター</strong>: LP制作メイン画面</li>
+            <li><strong>スワイプファイル管理</strong>: 参考資料の整理・検索</li>
+            <li><strong>スクレイピング</strong>: URL入力 → LP取得</li>
+            <li><strong>比較モード</strong>: ABCD並列表示</li>
+            <li><strong>書き出し設定</strong>: 形式選択、オプション設定</li>
+            <li><strong>設定</strong>: APIキー、環境設定</li>
+        </ol>
+
+        <h2>5.3 ワークフロー</h2>
+        <ol>
+            <li><strong>プロジェクト作成</strong>: クライアント名・案件名を入力</li>
+            <li><strong>参考資料収集</strong>: スワイプファイルアップロード or URLスクレイピング</li>
+            <li><strong>スタイル設定</strong>: カラーパレット・フォントを設定</li>
+            <li><strong>セクション制作</strong>: 1セクションずつ生成、マジックペンで調整</li>
+            <li><strong>比較・選定</strong>: ABCDパターンを比較し、最終案を決定</li>
+            <li><strong>レスポンシブ確認</strong>: PC/タブレット/スマホで確認・調整</li>
+            <li><strong>書き出し</strong>: PNG/PDF/HTML形式で出力</li>
+        </ol>
+
+        <h2>5.4 ショートカットキー</h2>
+        <table>
+            <tr><th>キー</th><th>機能</th></tr>
+            <tr><td>P</td><td>ペンツール（マジックペン）</td></tr>
+            <tr><td>V</td><td>選択ツール</td></tr>
+            <tr><td>R</td><td>矩形選択</td></tr>
+            <tr><td>Ctrl/Cmd + S</td><td>保存</td></tr>
+            <tr><td>Ctrl/Cmd + Z</td><td>元に戻す</td></tr>
+            <tr><td>Ctrl/Cmd + E</td><td>書き出し</td></tr>
+            <tr><td>1 / 2 / 3</td><td>デバイス切り替え（PC/タブレット/スマホ）</td></tr>
+            <tr><td>Enter</td><td>修正適用</td></tr>
+        </table>
+
+        <h1 id="s6" class="page-break">6. 講座・ボーナスコンテンツ</h1>
+        <h2>6.1 オンライン講座（本体付属）</h2>
+        <table>
+            <tr><th>モジュール</th><th>内容</th></tr>
+            <tr><td>セットアップガイド</td><td>Node.js、環境構築、APIキー取得</td></tr>
+            <tr><td>基本操作</td><td>画面説明、基本ワークフロー</td></tr>
+            <tr><td>マジックペン活用術</td><td>効果的な指示の出し方</td></tr>
+            <tr><td>スワイプファイル管理</td><td>効率的なリサーチ方法</td></tr>
+            <tr><td>ABCD比較の活用</td><td>クライアント提案への応用</td></tr>
+            <tr><td>書き出し & 納品</td><td>各形式の使い分け</td></tr>
+        </table>
+
+        <h2>6.2 ボーナスコンテンツ</h2>
+        <h3>AIエージェント活用講座</h3>
+        <ul>
+            <li>Cursor入門: インストールから基本操作</li>
+            <li>Claude Code活用: LP Builderとの連携</li>
+            <li>プロンプトエンジニアリング基礎</li>
+            <li>AI時代のワークフロー設計</li>
+        </ul>
+        <h3>テクニック集</h3>
+        <ul>
+            <li>Microsoft Clarity導入・分析ガイド</li>
+            <li>Lステップ連携テクニック</li>
+            <li>宴システム連携テクニック</li>
+            <li>WordPress埋め込みガイド</li>
+        </ul>
+        <h3>ベストプラクティスチェックシート</h3>
+        <table>
+            <tr><th>セクション</th><th>チェック項目</th></tr>
+            <tr><td>ヒーロー</td><td>3秒で伝わるか？CTAは目立つか？</td></tr>
+            <tr><td>課題提起</td><td>ターゲットの痛みに刺さっているか？</td></tr>
+            <tr><td>解決策</td><td>ベネフィットが明確か？</td></tr>
+            <tr><td>実績・お客様の声</td><td>顔写真、具体的な数字があるか？</td></tr>
+            <tr><td>FAQ</td><td>よくある反論に答えているか？</td></tr>
+            <tr><td>CTA</td><td>行動を促す言葉になっているか？</td></tr>
+        </table>
+
+        <h1 id="s7" class="page-break">7. 開発ロードマップ</h1>
+        <h2>7.1 フェーズ概要</h2>
+        <table>
+            <tr><th>フェーズ</th><th>期間</th><th>主要成果物</th></tr>
+            <tr><td>Phase 0</td><td>1週間</td><td>技術検証（PoC）、Gemini API接続、マジックペンプロトタイプ</td></tr>
+            <tr><td>Phase 1</td><td>4〜6週間</td><td>MVP開発（12機能）、基本UI実装</td></tr>
+            <tr><td>Phase 2</td><td>2〜4週間</td><td>追加機能（6機能）、UIブラッシュアップ</td></tr>
+            <tr><td>Phase 3</td><td>2週間</td><td>講座制作、ボーナスコンテンツ</td></tr>
+            <tr><td>Launch</td><td>1週間</td><td>最終テスト、ドキュメント整備、リリース</td></tr>
+        </table>
+
+        <h2>7.2 Phase 0: 技術検証（1週間）</h2>
+        <ul><li>☐ Gemini 3 Pro Image Preview APIの接続確認</li><li>☐ マジックペン（座標ベース修正）のプロトタイプ作成</li><li>☐ Playwrightによるフルページスクレイピングのテスト</li><li>☐ 基本的なUI骨格の構築</li></ul>
+
+        <h2>7.3 Phase 1: MVP開発（4〜6週間）</h2>
+        <h4>Week 1-2</h4>
+        <ul><li>☐ プロジェクト基盤構築（Next.js、DB、ファイル管理）</li><li>☐ セクション単位制作機能</li><li>☐ マジックペン機能（コア実装）</li></ul>
+        <h4>Week 3-4</h4>
+        <ul><li>☐ LP丸ごとスクレイピング</li><li>☐ スタイル自動抽出</li><li>☐ カラースポイト</li><li>☐ スワイプファイル管理</li></ul>
+        <h4>Week 5-6</h4>
+        <ul><li>☐ ABCD同時比較</li><li>☐ レスポンシブプレビュー</li><li>☐ 書き出し機能</li><li>☐ デザイントークン設定</li><li>☐ クイック修正プリセット</li><li>☐ 競合LP自動分析</li></ul>
+
+        <h2>7.4 Phase 2: 追加機能（2〜4週間）</h2>
+        <ul><li>☐ クライアントプレビューリンク</li><li>☐ リサーチ自動化スクレーパー</li><li>☐ バージョン履歴</li><li>☐ Figma形式書き出し</li><li>☐ 音声指示モード</li><li>☐ AIレビュー & 改善提案</li></ul>
+
+        <h2>7.5 Phase 3 & Launch</h2>
+        <ul><li>☐ 講座動画制作</li><li>☐ ボーナスコンテンツ作成</li><li>☐ 最終テスト（Windows / macOS / Linux）</li><li>☐ Discordコミュニティ準備</li><li>☐ 販売ページ・LP制作</li></ul>
+
+        <h1 id="s8" class="page-break">8. リスクと対策</h1>
+        <table>
+            <tr><th>リスク</th><th>影響</th><th>対策</th></tr>
+            <tr><td>Gemini API仕様変更</td><td>機能停止、品質低下</td><td>抽象化レイヤーを設け、他モデルへの切り替えを容易に</td></tr>
+            <tr><td>API利用料高騰</td><td>ユーザーコスト増</td><td>GCP無料クレジット訴求、効率的なAPI呼び出し設計</td></tr>
+            <tr><td>画像生成品質のばらつき</td><td>ユーザー満足度低下</td><td>プロンプトテンプレート最適化、再生成機能</td></tr>
+            <tr><td>スクレイピング対策強化</td><td>LP取得機能の制限</td><td>複数手法を用意（Playwright / Puppeteer）</td></tr>
+            <tr><td>ローカル環境構築の難易度</td><td>導入離脱</td><td>詳細なセットアップガイド、ワンクリック起動スクリプト</td></tr>
+            <tr><td>競合ツールの登場</td><td>市場シェア低下</td><td>マジックペン等の差別化機能を継続強化</td></tr>
+        </table>
+
+        <h1 id="s9">9. 成功指標（KPI）</h1>
+        <h2>9.1 販売目標</h2>
+        <table>
+            <tr><th>期間</th><th>販売数目標</th><th>売上目標</th></tr>
+            <tr><td>ローンチ1ヶ月</td><td>100本</td><td>298万円</td></tr>
+            <tr><td>3ヶ月</td><td>300本</td><td>894万円</td></tr>
+            <tr><td>6ヶ月</td><td>500本</td><td>1,490万円</td></tr>
+            <tr><td>1年</td><td>1,000本</td><td>2,980万円</td></tr>
+        </table>
+        <h2>9.2 ユーザー満足度</h2>
+        <ul><li><strong>NPS</strong>: 50以上を目標</li><li><strong>レビュー平均</strong>: 4.5/5.0 以上</li><li><strong>リピート購入率</strong>: 30%以上</li></ul>
+        <h2>9.3 エンゲージメント</h2>
+        <ul><li><strong>Discordコミュニティ参加率</strong>: 購入者の70%以上</li><li><strong>月間アクティブユーザー</strong>: 購入者の50%以上</li><li><strong>講座完了率</strong>: 60%以上</li></ul>
+
+        <h1 id="s10" class="page-break">10. 付録</h1>
+        <h2>10.1 用語集</h2>
+        <table>
+            <tr><th>用語</th><th>説明</th></tr>
+            <tr><td>マジックペン</td><td>視覚的に領域を指定して修正指示を出す本プロダクト独自の機能</td></tr>
+            <tr><td>スワイプファイル</td><td>参考にするLP・デザインの画像やスクリーンショットのコレクション</td></tr>
+            <tr><td>Gemini 3 Pro Image Preview</td><td>Google提供の最新画像生成モデル（通称: Nano Banana Pro）</td></tr>
+            <tr><td>デザイントークン</td><td>カラー、フォント、余白などのデザインルールを定義した設定値</td></tr>
+            <tr><td>EyeDropper API</td><td>ブラウザ標準のカラーピッカーAPI（Chrome 95以上）</td></tr>
+            <tr><td>Playwright</td><td>Microsoft製のヘッドレスブラウザ自動化ライブラリ</td></tr>
+            <tr><td>Cursor</td><td>AI搭載のコードエディタ。本プロダクトの推奨開発環境</td></tr>
+        </table>
+        <h2>10.2 参考リンク</h2>
+        <ul>
+            <li>Google AI Studio: https://aistudio.google.com/</li>
+            <li>Google Cloud Console: https://console.cloud.google.com/</li>
+            <li>Cursor: https://cursor.com/</li>
+            <li>Next.js: https://nextjs.org/</li>
+            <li>Tailwind CSS: https://tailwindcss.com/</li>
+            <li>shadcn/ui: https://ui.shadcn.com/</li>
+            <li>Playwright: https://playwright.dev/</li>
+            <li>Fabric.js: http://fabricjs.com/</li>
+        </ul>
+        <h2>更新履歴</h2>
+        <table>
+            <tr><th>Ver</th><th>日付</th><th>更新内容</th></tr>
+            <tr><td>1.0</td><td>2025/12/12</td><td>初版作成</td></tr>
+        </table>
+        <div class="footer">
+            <p>— End of Document —</p>
+            <p>LP Builder Pro 要件定義書 v1.0 | Confidential</p>
+        </div>
+    </div>
+</body>
+</html>

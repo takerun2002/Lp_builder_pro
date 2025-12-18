@@ -149,7 +149,7 @@ export default function ProjectScraperPage() {
         const data = await res.json();
 
         if (data.ok) {
-          setImportedIdxs((prev) => new Set([...prev, section.index]));
+          setImportedIdxs((prev) => new Set([...Array.from(prev), section.index]));
         } else {
           alert(`インポート失敗: ${data.error || "Unknown error"}`);
         }
@@ -218,7 +218,7 @@ export default function ProjectScraperPage() {
         const data = await res.json();
 
         if (data.ok) {
-          setImportedIdxs((prev) => new Set([...prev, section.index]));
+          setImportedIdxs((prev) => new Set([...Array.from(prev), section.index]));
         }
       }
     } catch (err) {

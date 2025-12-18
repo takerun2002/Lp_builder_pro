@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="icons/icon128.png" sizes="128x128">
+    <link rel="icon" href="icons/icon128.png" sizes="32x32">
+    <title>Image Viewer - Easy Banana</title>
+    <style>
+      :root { color-scheme: light dark; }
+      html, body { height: 100%; margin: 0; }
+      body { background: #000; color: #fff; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; }
+      .stage { position: fixed; inset: 0; display: grid; place-items: center; }
+      img { max-width: 100vw; max-height: 100vh; object-fit: contain; cursor: zoom-out; }
+      .tip { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); color: #ccc; font-size: 12px; opacity: .8; }
+      .close { position: fixed; top: 12px; right: 16px; background: rgba(255,255,255,.15); color: #fff; border: 0; border-radius: 999px; width: 34px; height: 34px; font-weight: 700; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <div class="stage">
+      <img id="img" alt="生成画像の拡大表示" />
+    </div>
+    <button class="close" id="close">×</button>
+    <div class="tip">クリックまたは Esc で閉じる</div>
+    <script src="viewer.js"></script>
+  </body>
+</html>

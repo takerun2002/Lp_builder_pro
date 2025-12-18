@@ -1,0 +1,20 @@
+# Cursor Rules
+
+## General
+- **Language**: Always respond in Japanese.
+- **Tone**: Professional, helpful, concise.
+
+## Project Context
+- **Name**: LP Builder Pro
+- **Description**: AI-powered Landing Page creation tool.
+- **Key Features**: Magic Pen, LP Scraping, Color Dropper, ABCD Comparison.
+
+## Tech Stack
+- Next.js 14 (App Router), TypeScript
+- Tailwind CSS + shadcn/ui
+- Zustand
+
+## Behavior
+- Check `CLAUDE.md` and `docs/` for complex tasks.
+- Use progressive disclosure - don't dump all docs at once.
+- Verify libraries/patterns in `docs/tech_stack.md` before assuming.

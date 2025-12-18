@@ -502,7 +502,7 @@ export function learnCtaPatterns(ads: MetaAd[]): string[] {
     .filter((c): c is string => !!c);
   
   // ユニークなCTAを抽出
-  const uniqueCtas = [...new Set(ctaTexts)];
+  const uniqueCtas = Array.from(new Set(ctaTexts));
   
   return uniqueCtas;
 }
@@ -561,3 +561,5 @@ export const MetaAdsResearch = {
 };
 
 export default MetaAdsResearch;
+
+

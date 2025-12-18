@@ -21,6 +21,9 @@ export type GeminiImageModelId = typeof GEMINI_IMAGE_MODEL_ID;
 
 export const DEFAULT_GEMINI_TEXT_MODEL_ID: GeminiTextModelId = "gemini-2.5-flash";
 
+// 後方互換性のためのエイリアス
+export const GEMINI_TEXT_MODEL_ID = DEFAULT_GEMINI_TEXT_MODEL_ID;
+
 export type GeminiTextModelPreset = "flash" | "pro25" | "pro3";
 
 export function resolveGeminiTextModelId(input?: string): GeminiTextModelId {
@@ -124,16 +127,15 @@ export async function generateText(
   let lastError: unknown;
   for (const m of [modelId, ...fallback]) {
     try {
+      // Note: thinkingLevel は型定義では enum だが、文字列でも動作する
+      const thinkingConfig = options?.thinkingLevel
+        ? { thinkingConfig: { thinkingLevel: options.thinkingLevel.toUpperCase() } }
+        : undefined;
       const response = await ai.models.generateContent({
         model: m,
         contents: prompt,
-        config: options?.thinkingLevel
-          ? {
-              thinkingConfig: {
-                thinkingLevel: options.thinkingLevel,
-              },
-            }
-          : undefined,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        config: thinkingConfig as any,
       });
       return response.text ?? "";
     } catch (err) {

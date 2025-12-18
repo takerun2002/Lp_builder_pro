@@ -6,6 +6,7 @@
  */
 
 import { analyzeLPWithAI, type LPAnalysisResult } from "./ai-analyzer";
+import { getApiKey } from "../api-keys";
 
 export interface FirecrawlScrapeResult {
   success: boolean;
@@ -38,7 +39,8 @@ export async function scrapeUrl(
     waitFor?: number;
   }
 ): Promise<FirecrawlScrapeResult> {
-  const apiKey = process.env.FIRECRAWL_API_KEY;
+  // 環境変数 → ストレージの順でAPIキーを取得
+  const apiKey = process.env.FIRECRAWL_API_KEY || await getApiKey("firecrawl");
 
   // APIキーがない場合はフォールバック
   if (!apiKey) {
@@ -97,7 +99,7 @@ export async function crawlUrl(
     excludePaths?: string[];
   }
 ): Promise<FirecrawlCrawlResult> {
-  const apiKey = process.env.FIRECRAWL_API_KEY;
+  const apiKey = process.env.FIRECRAWL_API_KEY || await getApiKey("firecrawl");
 
   if (!apiKey) {
     console.warn("[firecrawl] No API key, using fallback");
@@ -189,7 +191,7 @@ export async function searchAndScrape(
     region?: string;
   }
 ): Promise<FirecrawlScrapeResult[]> {
-  const apiKey = process.env.FIRECRAWL_API_KEY;
+  const apiKey = process.env.FIRECRAWL_API_KEY || await getApiKey("firecrawl");
 
   if (!apiKey) {
     console.warn("[firecrawl] No API key for search");
@@ -457,3 +459,5 @@ export async function scrapeAndAnalyzeLP(
     metadata: result.metadata,
   };
 }
+
+

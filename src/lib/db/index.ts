@@ -133,6 +133,57 @@ function initSchema(database: Database.Database): void {
     CREATE INDEX IF NOT EXISTS idx_sections_project ON sections(project_id);
     CREATE INDEX IF NOT EXISTS idx_swipe_files_project ON swipe_files(project_id);
   `);
+
+  // ==========================================================================
+  // Hybrid Storage Tables
+  // ==========================================================================
+
+  // ストレージアイテムテーブル（汎用データ保存）
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS storage_items (
+      key TEXT PRIMARY KEY,
+      data TEXT NOT NULL,
+      data_type TEXT NOT NULL,
+      checksum TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      synced_at TEXT,
+      sync_source TEXT
+    )
+  `);
+
+  // 同期キューテーブル（オフライン操作の保存）
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS sync_queue (
+      id TEXT PRIMARY KEY,
+      operation TEXT NOT NULL,
+      key TEXT NOT NULL,
+      data TEXT,
+      data_type TEXT NOT NULL,
+      target_adapter TEXT NOT NULL,
+      queued_at TEXT NOT NULL DEFAULT (datetime('now')),
+      retry_count INTEGER DEFAULT 0
+    )
+  `);
+
+  // Google OAuthトークンテーブル（シングルトン）
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS google_oauth (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      access_token TEXT NOT NULL,
+      refresh_token TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      scope TEXT NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+
+  // ストレージ関連インデックス
+  database.exec(`
+    CREATE INDEX IF NOT EXISTS idx_storage_items_type ON storage_items(data_type);
+    CREATE INDEX IF NOT EXISTS idx_storage_items_synced ON storage_items(synced_at);
+    CREATE INDEX IF NOT EXISTS idx_sync_queue_target ON sync_queue(target_adapter);
+  `);
 }
 
 // ユーティリティ: UUID生成

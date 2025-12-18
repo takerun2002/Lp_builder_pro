@@ -123,7 +123,7 @@ const EMOTIONAL_HOOKS = [
   { pattern: /秘密/, category: "希少性" },
   { pattern: /限定/, category: "希少性" },
   { pattern: /なぜ/, category: "好奇心" },
-  { pattern: /？|?/, category: "疑問" },
+  { pattern: /？|\?/, category: "疑問" },
   { pattern: /【.*】/, category: "括弧強調" },
 ];
 
@@ -464,9 +464,9 @@ function enrichVideoData(video: Partial<YouTubeVideoResult>): YouTubeVideoResult
     channelAverage: video.channelAverage,
     performanceRatio: video.performanceRatio,
     isOutperformer: video.isOutperformer,
-    extractedKeywords: [...new Set(keywords)],
-    titlePatterns: [...new Set(titlePatterns)],
-    emotionalHooks: [...new Set(emotionalHooks)],
+    extractedKeywords: Array.from(new Set(keywords)),
+    titlePatterns: Array.from(new Set(titlePatterns)),
+    emotionalHooks: Array.from(new Set(emotionalHooks)),
     scrapedAt: video.scrapedAt || new Date().toISOString(),
   };
 }
@@ -703,7 +703,7 @@ function findCommonElements(arrays: string[][]): string[] {
 
   const counts: Record<string, number> = {};
   arrays.forEach((arr) => {
-    const unique = [...new Set(arr)];
+    const unique = Array.from(new Set(arr));
     unique.forEach((item) => {
       counts[item] = (counts[item] || 0) + 1;
     });

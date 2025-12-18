@@ -108,15 +108,15 @@ export async function searchCompetitorLPs(
         // 競合詳細分析
         aiAnalysis = await analyzeCompetitorWithAI(sr.markdown, {
           genre: context.genre,
-          targetProblems: context.target.problems,
-          targetDesires: context.target.desires,
+          targetProblems: context.target.problems || "",
+          targetDesires: context.target.desires || "",
         });
 
         // AI類似度計算
         const similarityResult = await calculateSimilarityWithAI(sr.markdown, {
           genre: context.genre,
-          targetProblems: context.target.problems,
-          targetDesires: context.target.desires,
+          targetProblems: context.target.problems || "",
+          targetDesires: context.target.desires || "",
         });
 
         similarityScore = similarityResult.score;
@@ -581,7 +581,9 @@ export function extractCommonPatterns(
   return {
     commonSections,
     avgSectionCount,
-    topHeadlinePatterns: [...new Set(allHeadlines)].slice(0, 5),
-    topCTAPatterns: [...new Set(allCTAs)].slice(0, 5),
+    topHeadlinePatterns: Array.from(new Set(allHeadlines)).slice(0, 5),
+    topCTAPatterns: Array.from(new Set(allCTAs)).slice(0, 5),
   };
 }
+
+

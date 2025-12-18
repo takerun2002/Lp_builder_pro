@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="icons/icon128.png" sizes="128x128">
+    <link rel="icon" href="icons/icon128.png" sizes="32x32">
+    <title>Image Library - Easy Banana</title>
+    <style>
+      :root { color-scheme: light dark; }
+      html, body { height: 100%; margin: 0; }
+      *, *::before, *::after { box-sizing: border-box; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background: #121212; color: #e5e5e5; }
+      @media (prefers-color-scheme: light) { body { background: #fff; color: #1a1a1a; } }
+      .wrap { height: 100%; display: flex; flex-direction: column; gap: 12px; padding: 16px; width: min(1100px, 94vw); margin: 0 auto; }
+      h1 { margin: 0; font-size: 18px; font-weight: 700; }
+      .row { display: flex; gap: 8px; align-items: center; }
+      button { padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(128,128,128,.35); background: #ffd54f; color: #1a1a1a; font-weight: 600; cursor: pointer; }
+      .ghost { background: #2c2c2c; color: #eaeaea; border-color: rgba(255,255,255,.2); }
+      @media (prefers-color-scheme: light) { .ghost { background: #f3f4f6; color: #1b1b1b; border-color: rgba(0,0,0,.15); } }
+      .hidden { display: none !important; }
+      .grid { flex: 1; min-height: 0; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 200px)); justify-content: start; align-items: start; gap: 12px; }
+      .card { border: 1px solid rgba(128,128,128,.25); border-radius: 10px; padding: 6px; background: rgba(128,128,128,.06); display: flex; flex-direction: column; gap: 6px; }
+      .thumb { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 8px; }
+      .thumb { cursor: zoom-in; }
+      .card .head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+      .card .meta { font-size: 12px; opacity: .8; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+      .dropzone { border: 2px dashed rgba(128,128,128,.5); border-radius: 10px; padding: 14px; text-align: center; color: gray; cursor: pointer; }
+      .dropzone.drag { background: rgba(128,128,128,.08); border-color: #ffd54f; color: #ffd54f; }
+      .img-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+      .img-actions button { width: 100%; padding: 5px 9px; border-radius: 8px; border: 1px solid rgba(128,128,128,.35); background: #ffd54f; color: #1a1a1a; font-weight: 600; cursor: pointer; font-size: 12px; }
+      .img-actions .copy-btn { font-size: 11px; white-space: nowrap; }
+      .seg { display: inline-flex; border: 1px solid rgba(128,128,128,.35); border-radius: 999px; overflow: hidden; }
+      .seg-btn { padding: 6px 10px; border: 0; background: transparent; color: inherit; font-weight: 700; font-size: 12px; cursor: pointer; }
+      .seg-btn + .seg-btn { border-left: 1px solid rgba(128,128,128,.35); }
+      .seg-btn.active { background: #ffd54f; color: #1a1a1a; }
+      .storage-meter { font-size: 12px; color: #888; font-weight: 600; }
+      .toast { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); background: rgba(0,0,0,.82); color: #fff; border-radius: 8px; padding: 8px 12px; z-index: 10000; font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.35); }
+      @media (prefers-color-scheme: light) { .toast { background: rgba(0,0,0,.85); color: #fff; } }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>ライブラリ</h1>
+      <div class="row" style="justify-content:flex-start; gap:8px;">
+        <div id="sourceSeg" class="seg" role="group" aria-label="ライブラリの種類">
+          <button type="button" id="srcUser" class="seg-btn active">自分のライブラリ</button>
+          <button type="button" id="srcOfficial" class="seg-btn">公式ライブラリ</button>
+        </div>
+        <span id="storageMeter" class="storage-meter">ライブラリ: 0.0MB / 9.0MB 使用中 (0%)</span>
+        <span id="officialNote" class="hint hidden">template/index.json が見つかりません</span>
+      </div>
+      <div class="row" style="justify-content: space-between;">
+        <div class="row">
+          <button id="importBtn">画像を追加</button>
+          <button id="removeSel" class="ghost" title="選択している画像を削除します">選択した画像を削除</button>
+        </div>
+        <div class="row">
+          <button id="addSelected" title="選択している画像を参照画像としてSide Panelに追加します">選択した画像を参照画像に追加</button>
+        </div>
+      </div>
+      <div id="dz" class="dropzone">ここにドラッグ＆ドロップ（クリック/ペースト可）</div>
+      <input id="file" class="hidden" type="file" multiple accept="image/*" />
+      <div id="grid" class="grid"></div>
+      <div class="row" style="justify-content: flex-end;">
+        <button id="close" class="ghost">閉じる</button>
+      </div>
+    </div>
+    <script src="library.js"></script>
+  </body>
+</html>

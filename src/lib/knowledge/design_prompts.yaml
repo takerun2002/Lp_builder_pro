@@ -483,3 +483,5 @@ lp_section_prompts:
       - "banner_ad"
       - "email_header"
     trigger_keywords: ["CTA", "申し込み", "ボタン"]
+
+

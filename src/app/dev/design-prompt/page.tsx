@@ -4,6 +4,7 @@
  * デザインプロンプトジェネレーター UI
  *
  * 60+カテゴリのテンプレートから目的に合ったプロンプトを生成
+ * Phase 3.5: YouTubeサムネイル心理学フレームワーク追加
  */
 
 import { useState, useEffect, useMemo } from "react";
@@ -19,6 +20,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
+import { Progress } from "@/components/ui/progress";
 
 // ============================================
 // 型定義（クライアント用）
@@ -56,6 +60,50 @@ interface GeneratedPrompt {
   variables: Record<string, string>;
 }
 
+// YouTube心理学用型定義
+interface SurvivalTrigger {
+  id: string;
+  name: string;
+  japanese: string;
+  icon: string;
+  examples: string[];
+  visual_cues: string[];
+}
+
+interface TargetPersona {
+  id: string;
+  name: string;
+  description: string;
+  interests: string[];
+  effective_triggers: string[];
+  pain_points: string[];
+}
+
+interface ThreeConditionScore {
+  prediction_error: number;
+  survival_circuit: number;
+  self_relevance: number;
+  total: number;
+  rating: "excellent" | "good" | "needs_improvement";
+  ratingLabel: string;
+  ratingColor: string;
+  recommendation: string;
+}
+
+interface YouTubeResult {
+  prompt: string;
+  scores: ThreeConditionScore;
+  suggestions: string[];
+  colorPalette: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
+  aspectRatio: string;
+  resolution: string;
+  suggestedTool: string;
+}
+
 // ============================================
 // コンポーネント
 // ============================================
@@ -65,6 +113,10 @@ export default function DesignPromptPage() {
   const [categories, setCategories] = useState<CategoryInfo[]>([]);
   const [templates, setTemplates] = useState<TemplateInfo[]>([]);
   const [lpSections, setLpSections] = useState<LpSectionInfo[]>([]);
+
+  // YouTube心理学データ
+  const [survivalTriggers, setSurvivalTriggers] = useState<SurvivalTrigger[]>([]);
+  const [targetPersonas, setTargetPersonas] = useState<TargetPersona[]>([]);
 
   // 選択状態
   const [selectedCategory, setSelectedCategory] = useState<string>("");
@@ -87,6 +139,21 @@ export default function DesignPromptPage() {
   // ローディング
   const [loading, setLoading] = useState(true);
 
+  // YouTube心理学モード用状態
+  const [videoTitle, setVideoTitle] = useState("");
+  const [selectedPersona, setSelectedPersona] = useState("general");
+  const [selectedTrigger, setSelectedTrigger] = useState("reward");
+  const [catchCopy, setCatchCopy] = useState("");
+  const [predictionErrorElement, setPredictionErrorElement] = useState("");
+  const [survivalElement, setSurvivalElement] = useState("");
+  const [personalizationElement, setPersonalizationElement] = useState("");
+  const [scores, setScores] = useState({
+    prediction_error: 2,
+    survival_circuit: 2,
+    self_relevance: 2,
+  });
+  const [youtubeResult, setYoutubeResult] = useState<YouTubeResult | null>(null);
+
   // ============================================
   // データ読み込み
   // ============================================
@@ -103,6 +170,9 @@ export default function DesignPromptPage() {
         setCategories(data.categories || []);
         setTemplates(data.templates || []);
         setLpSections(data.lpSections || []);
+        // YouTube心理学データ
+        setSurvivalTriggers(data.survivalTriggers || []);
+        setTargetPersonas(data.targetPersonas || []);
       }
     } catch (error) {
       console.error("Failed to load design prompts:", error);
@@ -214,6 +284,54 @@ export default function DesignPromptPage() {
   }
 
   // ============================================
+  // YouTube心理学モード
+  // ============================================
+
+  async function handleGenerateYouTube() {
+    if (!videoTitle.trim()) return;
+
+    try {
+      const res = await fetch("/api/design-prompt/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "youtube_psychology",
+          videoTitle,
+          targetPersona: selectedPersona,
+          survivalTrigger: selectedTrigger,
+          catchCopy: catchCopy || undefined,
+          predictionErrorElement: predictionErrorElement || undefined,
+          survivalElement: survivalElement || undefined,
+          personalizationElement: personalizationElement || undefined,
+          scores,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setYoutubeResult(data.result);
+      }
+    } catch (error) {
+      console.error("Failed to generate YouTube prompt:", error);
+    }
+  }
+
+  async function handleCopyYouTubePrompt() {
+    if (!youtubeResult) return;
+
+    try {
+      await navigator.clipboard.writeText(youtubeResult.prompt);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  }
+
+  // 3条件スコアの合計を計算
+  const totalScore = scores.prediction_error + scores.survival_circuit + scores.self_relevance;
+
+  // ============================================
   // サンプル適用
   // ============================================
 
@@ -244,6 +362,14 @@ export default function DesignPromptPage() {
         </p>
       </div>
 
+      <Tabs defaultValue="templates" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="templates">テンプレート</TabsTrigger>
+          <TabsTrigger value="youtube">YouTube心理学</TabsTrigger>
+        </TabsList>
+
+        {/* テンプレートモード */}
+        <TabsContent value="templates">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* 左カラム: テンプレート選択 */}
         <div className="lg:col-span-1 space-y-4">
@@ -539,6 +665,326 @@ export default function DesignPromptPage() {
           )}
         </div>
       </div>
+        </TabsContent>
+
+        {/* YouTube心理学モード */}
+        <TabsContent value="youtube">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* 左カラム: 入力フォーム */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>YouTube心理学サムネイル生成</CardTitle>
+                  <CardDescription>
+                    神経科学ベースの3条件を満たすサムネイルプロンプトを生成
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* 動画タイトル */}
+                  <div className="space-y-2">
+                    <Label>動画タイトル *</Label>
+                    <Input
+                      value={videoTitle}
+                      onChange={(e) => setVideoTitle(e.target.value)}
+                      placeholder="例: 【衝撃】知らないと損する節税テクニック5選"
+                    />
+                  </div>
+
+                  {/* キャッチコピー */}
+                  <div className="space-y-2">
+                    <Label>キャッチコピー（サムネ用）</Label>
+                    <Input
+                      value={catchCopy}
+                      onChange={(e) => setCatchCopy(e.target.value)}
+                      placeholder="例: 知らないと損！（7-10文字推奨）"
+                    />
+                    <p className="text-xs text-gray-500">空欄の場合、タイトルから自動抽出</p>
+                  </div>
+
+                  {/* ターゲット選択 */}
+                  <div className="space-y-2">
+                    <Label>ターゲット</Label>
+                    <select
+                      className="w-full p-2 border rounded-md"
+                      value={selectedPersona}
+                      onChange={(e) => setSelectedPersona(e.target.value)}
+                    >
+                      {targetPersonas.map((persona) => (
+                        <option key={persona.id} value={persona.id}>
+                          {persona.name} - {persona.description}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 生存回路トリガー */}
+                  <div className="space-y-2">
+                    <Label>生存回路トリガー</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {survivalTriggers.map((trigger) => (
+                        <button
+                          key={trigger.id}
+                          className={`p-3 border rounded-lg text-left transition-colors ${
+                            selectedTrigger === trigger.id
+                              ? "border-blue-500 bg-blue-50"
+                              : "hover:border-gray-400"
+                          }`}
+                          onClick={() => setSelectedTrigger(trigger.id)}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl">{trigger.icon}</span>
+                            <span className="font-medium">{trigger.japanese}</span>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            {trigger.examples[0]}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 3条件スコアリング */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center justify-between">
+                    <span>3条件チェック</span>
+                    <Badge
+                      style={{
+                        backgroundColor:
+                          totalScore >= 8
+                            ? "#22C55E"
+                            : totalScore >= 6
+                            ? "#EAB308"
+                            : "#EF4444",
+                      }}
+                    >
+                      {totalScore}/9点
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    各条件を1-3点で自己評価
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* 予測誤差 */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label>① 予測誤差（見たことない感）</Label>
+                      <span className="font-medium">{scores.prediction_error}点</span>
+                    </div>
+                    <Slider
+                      value={[scores.prediction_error]}
+                      onValueChange={([v]) =>
+                        setScores({ ...scores, prediction_error: v })
+                      }
+                      min={1}
+                      max={3}
+                      step={1}
+                    />
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>よくある</span>
+                      <span>ある程度</span>
+                      <span>見たことない</span>
+                    </div>
+                    <Input
+                      value={predictionErrorElement}
+                      onChange={(e) => setPredictionErrorElement(e.target.value)}
+                      placeholder="意外性の要素（例: 〇〇 vs △△の比較）"
+                      className="text-sm"
+                    />
+                  </div>
+
+                  {/* 生存回路 */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label>② 生存回路（本能に刺さる）</Label>
+                      <span className="font-medium">{scores.survival_circuit}点</span>
+                    </div>
+                    <Slider
+                      value={[scores.survival_circuit]}
+                      onValueChange={([v]) =>
+                        setScores({ ...scores, survival_circuit: v })
+                      }
+                      min={1}
+                      max={3}
+                      step={1}
+                    />
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>理性的のみ</span>
+                      <span>弱いトリガー</span>
+                      <span>強いトリガー</span>
+                    </div>
+                    <Input
+                      value={survivalElement}
+                      onChange={(e) => setSurvivalElement(e.target.value)}
+                      placeholder="本能を刺激する要素（例: 札束のビジュアル）"
+                      className="text-sm"
+                    />
+                  </div>
+
+                  {/* 自分ごと化 */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <Label>③ 自分ごと化（ターゲットに響く）</Label>
+                      <span className="font-medium">{scores.self_relevance}点</span>
+                    </div>
+                    <Slider
+                      value={[scores.self_relevance]}
+                      onValueChange={([v]) =>
+                        setScores({ ...scores, self_relevance: v })
+                      }
+                      min={1}
+                      max={3}
+                      step={1}
+                    />
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>汎用的</span>
+                      <span>ある程度</span>
+                      <span>強く共感</span>
+                    </div>
+                    <Input
+                      value={personalizationElement}
+                      onChange={(e) => setPersonalizationElement(e.target.value)}
+                      placeholder="共感要素（例: 30代会社員向け）"
+                      className="text-sm"
+                    />
+                  </div>
+
+                  {/* スコアバー */}
+                  <div className="pt-2">
+                    <Progress value={(totalScore / 9) * 100} className="h-2" />
+                    <p className="text-sm text-gray-600 mt-2">
+                      {totalScore >= 8
+                        ? "優秀: このまま使用可能"
+                        : totalScore >= 6
+                        ? "良好: 微調整で改善可能"
+                        : "要改善: 3条件を見直しましょう"}
+                    </p>
+                  </div>
+
+                  <Button
+                    className="w-full"
+                    onClick={handleGenerateYouTube}
+                    disabled={!videoTitle.trim()}
+                  >
+                    心理最適化プロンプトを生成
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* 右カラム: 生成結果 */}
+            <div className="space-y-4">
+              {youtubeResult ? (
+                <>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <span>生成結果</span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCopyYouTubePrompt}
+                        >
+                          {copySuccess ? "コピーしました!" : "コピー"}
+                        </Button>
+                      </CardTitle>
+                      <CardDescription className="flex items-center gap-2">
+                        <Badge
+                          style={{ backgroundColor: youtubeResult.scores.ratingColor }}
+                        >
+                          {youtubeResult.scores.ratingLabel} ({youtubeResult.scores.total}/9)
+                        </Badge>
+                        <span>
+                          | {youtubeResult.aspectRatio} | {youtubeResult.resolution}
+                        </span>
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Textarea
+                        className="min-h-[300px] font-mono text-sm"
+                        value={youtubeResult.prompt}
+                        readOnly
+                      />
+                    </CardContent>
+                  </Card>
+
+                  {/* 改善提案 */}
+                  {youtubeResult.suggestions.length > 0 && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg">改善提案</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ul className="space-y-2">
+                          {youtubeResult.suggestions.map((suggestion, idx) => (
+                            <li key={idx} className="text-sm text-amber-700 bg-amber-50 p-3 rounded-lg">
+                              {suggestion}
+                            </li>
+                          ))}
+                        </ul>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* カラーパレット */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">推奨カラーパレット</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex gap-4">
+                        <div className="flex-1">
+                          <div
+                            className="h-16 rounded-lg mb-2"
+                            style={{ backgroundColor: youtubeResult.colorPalette.primary }}
+                          />
+                          <p className="text-xs text-center text-gray-500">
+                            メイン<br />{youtubeResult.colorPalette.primary}
+                          </p>
+                        </div>
+                        <div className="flex-1">
+                          <div
+                            className="h-16 rounded-lg mb-2"
+                            style={{ backgroundColor: youtubeResult.colorPalette.secondary }}
+                          />
+                          <p className="text-xs text-center text-gray-500">
+                            サブ<br />{youtubeResult.colorPalette.secondary}
+                          </p>
+                        </div>
+                        <div className="flex-1">
+                          <div
+                            className="h-16 rounded-lg mb-2"
+                            style={{ backgroundColor: youtubeResult.colorPalette.accent }}
+                          />
+                          <p className="text-xs text-center text-gray-500">
+                            アクセント<br />{youtubeResult.colorPalette.accent}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              ) : (
+                <Card>
+                  <CardContent className="flex items-center justify-center h-64">
+                    <div className="text-center text-gray-500">
+                      <p className="text-lg">動画情報を入力してください</p>
+                      <p className="text-sm mt-2">
+                        タイトル、ターゲット、トリガーを設定し、
+                        <br />
+                        3条件をチェックしてプロンプトを生成
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 /**
  * デザインプロンプト テンプレート取得API
+ * Phase 3.5: YouTubeサムネイル心理学フレームワーク対応
  */
 
 import { NextResponse } from "next/server";
@@ -7,6 +8,8 @@ import {
   getCategories,
   getAllTemplates,
   getLpSections,
+  getSurvivalTriggers,
+  getTargetPersonas,
 } from "@/lib/knowledge/design-prompt-generator";
 
 export async function GET() {
@@ -15,11 +18,18 @@ export async function GET() {
     const templates = getAllTemplates();
     const lpSections = getLpSections();
 
+    // YouTube心理学フレームワーク用データ
+    const survivalTriggers = getSurvivalTriggers();
+    const targetPersonas = getTargetPersonas();
+
     return NextResponse.json({
       ok: true,
       categories,
       templates,
       lpSections,
+      // YouTube心理学
+      survivalTriggers,
+      targetPersonas,
     });
   } catch (error) {
     console.error("[api/design-prompt/templates] Error:", error);

@@ -5,7 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
+import { MagicPenEditorFull } from "@/components/magic-pen/MagicPenEditorFull";
+import { ReferencePanel } from "./components/ReferencePanel";
+import { QualitySelector, QUALITY_CONFIG, type ImageQuality } from "./components/QualitySelector";
 
 // ============================================================
 // Types
@@ -54,7 +56,6 @@ interface ChatMessage {
 }
 
 type ViewMode = "connected" | "blocks";
-type EditTool = "brush" | "eraser";
 type MangaStyle = "4koma" | "banner" | "hero" | "story";
 type AspectRatio = "16:9" | "9:16" | "1:1" | "4:3";
 
@@ -62,6 +63,7 @@ interface GenerateOptions {
   style: MangaStyle;
   aspectRatio: AspectRatio;
   colorMode: "fullcolor" | "monochrome";
+  quality: ImageQuality;
 }
 
 // ============================================================
@@ -101,16 +103,7 @@ export default function WorkspacePage() {
   // Magic Pen Edit Mode
   const [editMode, setEditMode] = useState(false);
   const [editingSection, setEditingSection] = useState<Section | null>(null);
-  const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
-  const [editTool, setEditTool] = useState<EditTool>("brush");
-  const [brushSize, setBrushSize] = useState(30);
-  const [editPrompt, setEditPrompt] = useState("");
-  const [editing, setEditing] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const maskCanvasRef = useRef<HTMLCanvasElement>(null);
-  const [canvasScale, setCanvasScale] = useState(1);
-  const isDrawingRef = useRef(false);
-  const lastPosRef = useRef({ x: 0, y: 0 });
+  const [editImageDataUrl, setEditImageDataUrl] = useState<string | null>(null);
 
   // Palette (image stock)
   const [palette, setPalette] = useState<PaletteImage[]>([]);
@@ -120,16 +113,27 @@ export default function WorkspacePage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [generateProgress, setGenerateProgress] = useState(0);
   const [showGenOptions, setShowGenOptions] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
   const [genOptions, setGenOptions] = useState<GenerateOptions>({
     style: "banner",
     aspectRatio: "16:9",
     colorMode: "fullcolor",
+    quality: "2k",
   });
+  
+  // Panel widths (resizable)
+  const [paletteWidth, setPaletteWidth] = useState(220);
+  const [chatWidth, setChatWidth] = useState(280);
+  const isResizingRef = useRef<"palette" | "chat" | null>(null);
+  const resizeStartXRef = useRef(0);
+  const resizeStartWidthRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Panel visibility
   const [showPalette, setShowPalette] = useState(true);
+  const [showReference, setShowReference] = useState(false);
   const [showChat, setShowChat] = useState(true);
 
   // File input ref
@@ -187,6 +191,42 @@ export default function WorkspacePage() {
   }, [chatMessages]);
 
   // ============================================================
+  // Panel Resize
+  // ============================================================
+
+  const handleResizeStart = useCallback((panel: "palette" | "chat", e: React.MouseEvent) => {
+    isResizingRef.current = panel;
+    resizeStartXRef.current = e.clientX;
+    resizeStartWidthRef.current = panel === "palette" ? paletteWidth : chatWidth;
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  }, [paletteWidth, chatWidth]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizingRef.current) return;
+      const delta = e.clientX - resizeStartXRef.current;
+      const newWidth = Math.max(150, Math.min(400, resizeStartWidthRef.current + (isResizingRef.current === "palette" ? delta : -delta)));
+      if (isResizingRef.current === "palette") {
+        setPaletteWidth(newWidth);
+      } else {
+        setChatWidth(newWidth);
+      }
+    };
+    const handleMouseUp = () => {
+      isResizingRef.current = null;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
+  // ============================================================
   // Magic Pen Edit Mode
   // ============================================================
 
@@ -200,10 +240,9 @@ export default function WorkspacePage() {
       const reader = new FileReader();
       reader.onload = (e) => {
         const dataUrl = e.target?.result as string;
-        setEditImageUrl(dataUrl);
+        setEditImageDataUrl(dataUrl);
         setEditingSection(section);
         setEditMode(true);
-        setEditPrompt("");
       };
       reader.readAsDataURL(blob);
     } catch (err) {
@@ -214,159 +253,48 @@ export default function WorkspacePage() {
   const exitEditMode = () => {
     setEditMode(false);
     setEditingSection(null);
-    setEditImageUrl(null);
-    setEditPrompt("");
+    setEditImageDataUrl(null);
   };
 
-  // Setup canvases when entering edit mode
-  useEffect(() => {
-    if (editMode && editImageUrl && canvasRef.current && maskCanvasRef.current) {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = canvasRef.current!;
-        const maskCanvas = maskCanvasRef.current!;
-
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        maskCanvas.width = img.naturalWidth;
-        maskCanvas.height = img.naturalHeight;
-
-        const ctx = canvas.getContext("2d");
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-        }
-
-        const maskCtx = maskCanvas.getContext("2d");
-        if (maskCtx) {
-          maskCtx.fillStyle = "black";
-          maskCtx.fillRect(0, 0, img.naturalWidth, img.naturalHeight);
-        }
-
-        // Calculate scale to fit
-        const containerWidth = window.innerWidth - 400;
-        const containerHeight = window.innerHeight - 200;
-        const scaleX = containerWidth / img.naturalWidth;
-        const scaleY = containerHeight / img.naturalHeight;
-        setCanvasScale(Math.min(scaleX, scaleY, 1));
-      };
-      img.src = editImageUrl;
-    }
-  }, [editMode, editImageUrl]);
-
-  // Canvas drawing
-  const getCanvasPos = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = maskCanvasRef.current?.getBoundingClientRect();
-    if (!rect) return { x: 0, y: 0 };
-    return {
-      x: (e.clientX - rect.left) / canvasScale,
-      y: (e.clientY - rect.top) / canvasScale,
-    };
-  }, [canvasScale]);
-
-  const draw = useCallback((x: number, y: number) => {
-    if (!maskCanvasRef.current) return;
-    const ctx = maskCanvasRef.current.getContext("2d");
-    if (!ctx) return;
-
-    ctx.beginPath();
-    ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-    ctx.fillStyle = editTool === "brush" ? "white" : "black";
-    ctx.fill();
-
-    if (lastPosRef.current.x !== 0 || lastPosRef.current.y !== 0) {
-      ctx.beginPath();
-      ctx.moveTo(lastPosRef.current.x, lastPosRef.current.y);
-      ctx.lineTo(x, y);
-      ctx.lineWidth = brushSize;
-      ctx.lineCap = "round";
-      ctx.strokeStyle = editTool === "brush" ? "white" : "black";
-      ctx.stroke();
-    }
-  }, [brushSize, editTool]);
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    isDrawingRef.current = true;
-    const pos = getCanvasPos(e);
-    lastPosRef.current = pos;
-    draw(pos.x, pos.y);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawingRef.current) return;
-    const pos = getCanvasPos(e);
-    draw(pos.x, pos.y);
-    lastPosRef.current = pos;
-  };
-
-  const handleMouseUp = () => {
-    isDrawingRef.current = false;
-    lastPosRef.current = { x: 0, y: 0 };
-  };
-
-  const clearMask = () => {
-    if (!maskCanvasRef.current) return;
-    const ctx = maskCanvasRef.current.getContext("2d");
-    if (ctx) {
-      ctx.fillStyle = "black";
-      ctx.fillRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height);
-    }
-  };
-
-  // Execute Magic Pen edit
-  const handleMagicEdit = async () => {
-    if (!editPrompt.trim() || !maskCanvasRef.current || !editImageUrl || !editingSection) return;
-    setEditing(true);
+  // Handle save from MagicPenEditorFull
+  const handleMagicPenSave = async (resultDataUrl: string) => {
+    if (!editingSection) return;
 
     try {
-      const maskDataUrl = maskCanvasRef.current.toDataURL("image/png");
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = resultDataUrl;
+      });
 
-      const res = await fetch("/api/dev/gemini/magic-pen", {
-        method: "POST",
+      const updateRes = await fetch(`/api/projects/${projectId}/sections/${editingSection.id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: editPrompt,
-          imageDataUrl: editImageUrl,
-          maskDataUrl,
+          imageDataUrl: resultDataUrl,
+          width: img.naturalWidth,
+          height: img.naturalHeight,
         }),
       });
 
-      const data = await res.json();
-      if (data.ok) {
-        // Update the section with new image
-        const updateRes = await fetch(`/api/projects/${projectId}/sections/${editingSection.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            imageDataUrl: data.imageDataUrl,
-          }),
-        });
-
-        const updateData = await updateRes.json();
-        if (updateData.ok) {
-          // Update sections list
-          setSections((prev) =>
-            prev.map((s) =>
-              s.id === editingSection.id
-                ? { ...s, image_path: updateData.section.image_path }
-                : s
-            )
-          );
-          // Update edit canvas
-          setEditImageUrl(data.imageDataUrl);
-          clearMask();
-          setEditPrompt("");
-
-          // Also add to palette
-          addToPalette(data.imageDataUrl, `編集後 ${new Date().toLocaleTimeString()}`);
-        }
-      } else {
-        alert(data.error?.message || "編集に失敗しました");
+      const updateData = await updateRes.json();
+      if (updateData.ok) {
+        // Update sections list
+        setSections((prev) =>
+          prev.map((s) =>
+            s.id === editingSection.id
+              ? { ...s, image_path: updateData.section.image_path }
+              : s
+          )
+        );
+        // Also add to palette
+        addToPalette(resultDataUrl, `編集後 ${new Date().toLocaleTimeString()}`);
+        exitEditMode();
       }
     } catch (err) {
-      console.error("Edit error:", err);
-      alert("編集に失敗しました");
-    } finally {
-      setEditing(false);
+      console.error("Failed to save:", err);
+      alert("保存に失敗しました");
     }
   };
 
@@ -586,12 +514,18 @@ export default function WorkspacePage() {
     const promptText = chatInput;
     setChatInput("");
     setGenerating(true);
+    setGenerateProgress(0);
 
     try {
       // Detect if user wants image generation
       const wantsImage = /生成|作って|作成|描いて|画像|イラスト|バナー|素材|漫画|マンガ|コマ/.test(promptText);
 
       if (wantsImage) {
+        // Progress simulation for UX
+        const progressInterval = setInterval(() => {
+          setGenerateProgress((prev) => Math.min(prev + Math.random() * 15, 90));
+        }, 500);
+
         // Auto-detect style from prompt
         let detectedStyle = genOptions.style;
         if (/4コマ|四コマ|よんこま|4koma/i.test(promptText)) {
@@ -624,6 +558,8 @@ export default function WorkspacePage() {
           }),
         });
 
+        clearInterval(progressInterval);
+        setGenerateProgress(100);
         const data = await res.json();
         if (data.ok) {
           const styleInfo = `${styleLabels[detectedStyle]} / ${aspectLabels[detectedAspect]}`;
@@ -642,13 +578,44 @@ export default function WorkspacePage() {
           throw new Error(data.error?.message || "生成に失敗しました");
         }
       } else {
-        const assistantMessage: ChatMessage = {
-          id: generateId(),
-          role: "assistant",
-          content: "画像を生成するには「〜を生成して」「〜を作って」などと指示してください。\n\nヒント:\n・「横長バナーを生成」→ バナー形式\n・「4コマ漫画を作って」→ 4コマ形式\n・「縦長のヒーロー画像」→ 縦長ヒーロー",
-          timestamp: Date.now(),
-        };
-        setChatMessages((prev) => [...prev, assistantMessage]);
+        // 壁打ちチャット - NVIDIA Nemotron（無料）を使用
+        try {
+          const chatRes = await fetch("/api/chat/workspace", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              messages: [
+                ...chatMessages.map((m) => ({
+                  role: m.role,
+                  content: m.content,
+                })),
+                { role: "user", content: promptText },
+              ],
+            }),
+          });
+          const chatData = await chatRes.json();
+          
+          if (chatData.ok) {
+            const assistantMessage: ChatMessage = {
+              id: generateId(),
+              role: "assistant",
+              content: chatData.content,
+              timestamp: Date.now(),
+            };
+            setChatMessages((prev) => [...prev, assistantMessage]);
+          } else {
+            throw new Error(chatData.error || "チャット生成に失敗しました");
+          }
+        } catch {
+          // フォールバック：ヒントメッセージ
+          const assistantMessage: ChatMessage = {
+            id: generateId(),
+            role: "assistant",
+            content: "💡 画像を生成するには「〜を生成して」「〜を作って」などと指示してください。\n\nヒント:\n・「横長バナーを生成」→ バナー形式\n・「4コマ漫画を作って」→ 4コマ形式\n・「縦長のヒーロー画像」→ 縦長ヒーロー\n\n※ 壁打ちチャットを使うにはOpenRouter APIキーを設定してください",
+            timestamp: Date.now(),
+          };
+          setChatMessages((prev) => [...prev, assistantMessage]);
+        }
       }
     } catch (err) {
       console.error("Chat error:", err);
@@ -661,6 +628,7 @@ export default function WorkspacePage() {
       setChatMessages((prev) => [...prev, errorMessage]);
     } finally {
       setGenerating(false);
+      setGenerateProgress(0);
     }
   };
 
@@ -680,102 +648,16 @@ export default function WorkspacePage() {
     return null;
   }
 
-  // Edit Mode UI
-  if (editMode && editingSection) {
+  // Edit Mode UI - 完成版マジックペンを使用
+  if (editMode && editingSection && editImageDataUrl) {
     return (
-      <div className="h-screen bg-background flex flex-col overflow-hidden">
-        {/* Edit Mode Header */}
-        <header className="border-b bg-card shrink-0 z-10">
-          <div className="px-4 py-2 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={exitEditMode}>
-                ← 戻る
-              </Button>
-              <h1 className="font-semibold">編集: {editingSection.name}</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={editTool === "brush" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setEditTool("brush")}
-              >
-                ブラシ
-              </Button>
-              <Button
-                variant={editTool === "eraser" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setEditTool("eraser")}
-              >
-                消しゴム
-              </Button>
-              <span className="text-sm text-muted-foreground ml-2">サイズ: {brushSize}</span>
-              <input
-                type="range"
-                min="5"
-                max="100"
-                value={brushSize}
-                onChange={(e) => setBrushSize(Number(e.target.value))}
-                className="w-24"
-              />
-              <Button variant="outline" size="sm" onClick={clearMask}>
-                クリア
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        <div className="flex-1 flex overflow-hidden">
-          {/* Canvas Area */}
-          <div className="flex-1 flex items-center justify-center bg-muted/20 overflow-auto p-4">
-            <div className="relative">
-              <canvas
-                ref={canvasRef}
-                style={{
-                  transform: `scale(${canvasScale})`,
-                  transformOrigin: "top left",
-                }}
-              />
-              <canvas
-                ref={maskCanvasRef}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  transform: `scale(${canvasScale})`,
-                  transformOrigin: "top left",
-                  opacity: 0.4,
-                  mixBlendMode: "multiply",
-                  cursor: "crosshair",
-                }}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-              />
-            </div>
-          </div>
-
-          {/* Edit Panel */}
-          <div className="w-80 border-l bg-card p-4 flex flex-col">
-            <h2 className="font-medium mb-2">編集指示</h2>
-            <p className="text-xs text-muted-foreground mb-4">
-              編集したい領域をブラシで塗ってから、指示を入力してください。
-            </p>
-            <Textarea
-              value={editPrompt}
-              onChange={(e) => setEditPrompt(e.target.value)}
-              placeholder="例: この部分を青空に変更&#10;例: 文字を削除してシンプルに"
-              className="flex-1 min-h-[120px] mb-4"
-            />
-            <Button
-              onClick={handleMagicEdit}
-              disabled={editing || !editPrompt.trim()}
-              className="w-full"
-            >
-              {editing ? "編集中..." : "Magic編集を実行"}
-            </Button>
-          </div>
-        </div>
+      <div className="h-screen bg-background">
+        <MagicPenEditorFull
+          imageDataUrl={editImageDataUrl}
+          projectId={projectId}
+          onSave={handleMagicPenSave}
+          onCancel={exitEditMode}
+        />
       </div>
     );
   }
@@ -811,12 +693,29 @@ export default function WorkspacePage() {
               パレット
             </Button>
             <Button
+              variant={showReference ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowReference(!showReference)}
+            >
+              📋 参照LP
+            </Button>
+            <Button
               variant={showChat ? "default" : "outline"}
               size="sm"
               onClick={() => setShowChat(!showChat)}
             >
               AIチャット
             </Button>
+
+            {/* Quality Selector */}
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-muted-foreground">品質:</span>
+              <QualitySelector
+                value={genOptions.quality}
+                onChange={(q) => setGenOptions((prev) => ({ ...prev, quality: q }))}
+                compact
+              />
+            </div>
 
             {/* Add Section */}
             <Button
@@ -850,7 +749,15 @@ export default function WorkspacePage() {
       <div className="flex-1 flex overflow-hidden">
         {/* Left: Palette */}
         {showPalette && (
-          <div className="w-56 border-r bg-card flex flex-col shrink-0">
+          <div 
+            className="border-r bg-card flex flex-col shrink-0 relative"
+            style={{ width: paletteWidth }}
+          >
+            {/* Resize Handle */}
+            <div
+              className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors z-10"
+              onMouseDown={(e) => handleResizeStart("palette", e)}
+            />
             <div className="p-2 border-b">
               <h2 className="text-sm font-medium">パレット</h2>
               <p className="text-xs text-muted-foreground">ダブルクリックでセクション追加</p>
@@ -1150,13 +1057,65 @@ export default function WorkspacePage() {
           </div>
         </div>
 
+        {/* Reference LP Panel */}
+        {showReference && (
+          <div className="border-l bg-card flex flex-col shrink-0 w-[300px]">
+            <ReferencePanel
+              projectId={projectId}
+              swipeFiles={swipeFiles}
+              manuscript={project?.manuscript || null}
+              onAddToPalette={addToPalette}
+              onManuscriptChange={(m) => setProject((prev) => prev ? { ...prev, manuscript: m } : null)}
+              onImportSections={async (sectionsToImport) => {
+                for (const section of sectionsToImport) {
+                  const img = new Image();
+                  img.onload = async () => {
+                    try {
+                      const res = await fetch(`/api/projects/${projectId}/sections`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          name: section.name,
+                          imageDataUrl: section.imageDataUrl,
+                          width: img.naturalWidth,
+                          height: img.naturalHeight,
+                        }),
+                      });
+                      const data = await res.json();
+                      if (data.ok) {
+                        setSections((prev) => [...prev, data.section]);
+                      }
+                    } catch (err) {
+                      console.error("Failed to import section:", err);
+                    }
+                  };
+                  img.src = section.imageDataUrl;
+                }
+              }}
+            />
+          </div>
+        )}
+
         {/* Right: AI Chat */}
         {showChat && (
-          <div className="w-80 border-l bg-card flex flex-col shrink-0">
-            <div className="p-2 border-b flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-medium">AIアシスタント</h2>
-                <p className="text-xs text-muted-foreground">素材生成・画像作成</p>
+          <div 
+            className="border-l bg-card flex flex-col shrink-0 relative"
+            style={{ width: chatWidth }}
+          >
+            {/* Resize Handle */}
+            <div
+              className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors z-10"
+              onMouseDown={(e) => handleResizeStart("chat", e)}
+            />
+            <div className="p-3 border-b flex items-center justify-between bg-gradient-to-r from-primary/5 to-transparent">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-sm">🤖</span>
+                </div>
+                <div>
+                  <h2 className="text-sm font-semibold">AI アシスタント</h2>
+                  <p className="text-[10px] text-muted-foreground">画像生成 • アイデア出し</p>
+                </div>
               </div>
               <Button
                 variant="ghost"
@@ -1208,58 +1167,110 @@ export default function WorkspacePage() {
                     <option value="monochrome">モノクロ</option>
                   </select>
                 </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs w-16">品質:</span>
+                  <select
+                    value={genOptions.quality}
+                    onChange={(e) => setGenOptions((prev) => ({ ...prev, quality: e.target.value as ImageQuality }))}
+                    className="flex-1 text-xs p-1 rounded border bg-background"
+                  >
+                    <option value="1k">💨 1K (1024px) - 低コスト</option>
+                    <option value="2k">⭐ 2K (2048px) - 推奨</option>
+                    <option value="4k">💎 4K (4096px) - 高品質</option>
+                  </select>
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  ※プロンプト内のキーワードで自動判定もします
-                </p>
+                  ※高解像度ほどAPI料金が増加します</p>
               </div>
             )}
 
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-2 space-y-3">
+            <div className="flex-1 overflow-y-auto p-3 space-y-4">
               {chatMessages.length === 0 ? (
-                <div className="text-xs text-muted-foreground text-center py-4">
-                  <p className="mb-3 font-medium">素材を生成できます</p>
-                  <div className="space-y-1 text-left bg-muted/30 rounded p-2">
-                    <p>・「バナーを生成して」</p>
-                    <p>・「縦長のヒーロー画像」</p>
-                    <p>・「4コマ漫画を作って」</p>
-                    <p>・「商品紹介の素材を作成」</p>
+                <div className="text-center py-6">
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-3">
+                    <span className="text-xl">✨</span>
+                  </div>
+                  <p className="text-sm font-medium mb-2">AIアシスタント</p>
+                  <p className="text-xs text-muted-foreground mb-4">画像生成やアイデア出しをサポート</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <button 
+                      onClick={() => setChatInput("バナー画像を生成して")}
+                      className="px-2 py-1.5 bg-muted hover:bg-muted/80 rounded-md text-left transition-colors"
+                    >
+                      🎨 バナー生成
+                    </button>
+                    <button 
+                      onClick={() => setChatInput("縦長のヒーロー画像を作って")}
+                      className="px-2 py-1.5 bg-muted hover:bg-muted/80 rounded-md text-left transition-colors"
+                    >
+                      📱 ヒーロー画像
+                    </button>
+                    <button 
+                      onClick={() => setChatInput("4コマ漫画を作って")}
+                      className="px-2 py-1.5 bg-muted hover:bg-muted/80 rounded-md text-left transition-colors"
+                    >
+                      📖 4コマ漫画
+                    </button>
+                    <button 
+                      onClick={() => setChatInput("商品紹介の素材を作成して")}
+                      className="px-2 py-1.5 bg-muted hover:bg-muted/80 rounded-md text-left transition-colors"
+                    >
+                      📦 商品素材
+                    </button>
                   </div>
                 </div>
               ) : (
                 chatMessages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`${
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground ml-4"
-                        : "bg-muted mr-4"
-                    } rounded-lg p-2 text-sm`}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                   >
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                    {msg.imageUrl && (
-                      <div className="mt-2">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={msg.imageUrl}
-                          alt="Generated"
-                          className="w-full rounded cursor-pointer hover:ring-2 hover:ring-primary"
-                          onClick={() => {
-                            addToPalette(msg.imageUrl!, `再利用 ${new Date().toLocaleTimeString()}`);
-                          }}
-                          title="クリックでパレットに再追加"
-                        />
-                        <p className="text-xs mt-1 opacity-70">パレットに追加済み（クリックで再追加）</p>
-                      </div>
-                    )}
+                    <div
+                      className={`max-w-[85%] ${
+                        msg.role === "user"
+                          ? "bg-primary text-primary-foreground rounded-2xl rounded-br-md"
+                          : "bg-muted rounded-2xl rounded-bl-md"
+                      } px-3 py-2 text-sm shadow-sm`}
+                    >
+                      <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                      {msg.imageUrl && (
+                        <div className="mt-2">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={msg.imageUrl}
+                            alt="Generated"
+                            className="w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => {
+                              addToPalette(msg.imageUrl!, `再利用 ${new Date().toLocaleTimeString()}`);
+                            }}
+                            title="クリックでパレットに追加"
+                          />
+                          <p className="text-[10px] mt-1.5 opacity-60 text-center">クリックでパレットに追加</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))
               )}
               {generating && (
-                <div className="bg-muted mr-4 rounded-lg p-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                    <span>生成中...</span>
+                <div className="flex justify-start">
+                  <div className="max-w-[85%] bg-muted rounded-2xl rounded-bl-md px-4 py-3 text-sm shadow-sm space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                      </div>
+                      <span className="text-xs font-medium">生成中</span>
+                      <span className="text-xs text-muted-foreground">{Math.round(generateProgress)}%</span>
+                    </div>
+                    <div className="w-full bg-muted-foreground/20 rounded-full h-1.5 overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-primary to-primary/70 transition-all duration-300 ease-out"
+                        style={{ width: `${generateProgress}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -1267,33 +1278,49 @@ export default function WorkspacePage() {
             </div>
 
             {/* Chat Input */}
-            <div className="p-2 border-t space-y-2">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <span className="bg-muted px-1 rounded">{styleLabels[genOptions.style]}</span>
-                <span className="bg-muted px-1 rounded">{aspectLabels[genOptions.aspectRatio]}</span>
-                <span className="bg-muted px-1 rounded">{genOptions.colorMode === "fullcolor" ? "カラー" : "モノクロ"}</span>
+            <div className="p-3 border-t bg-muted/30 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <span className="bg-background px-1.5 py-0.5 rounded border">{styleLabels[genOptions.style]}</span>
+                  <span className="bg-background px-1.5 py-0.5 rounded border">{aspectLabels[genOptions.aspectRatio]}</span>
+                  <span className="bg-background px-1.5 py-0.5 rounded border">{genOptions.colorMode === "fullcolor" ? "カラー" : "モノクロ"}</span>
+                  <span className="bg-background px-1.5 py-0.5 rounded border">{QUALITY_CONFIG[genOptions.quality].emoji} {QUALITY_CONFIG[genOptions.quality].label}</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground hidden sm:inline">⌘+Enter 送信</span>
               </div>
               <div className="flex gap-2">
-                <input
-                  type="text"
+                <textarea
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
+                  onCompositionStart={() => setIsComposing(true)}
+                  onCompositionEnd={() => setIsComposing(false)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
+                    // Macの日本語入力対応：composing中はEnterで送信しない
+                    if (e.key === "Enter" && !e.shiftKey && !isComposing) {
                       e.preventDefault();
                       handleChatSubmit();
                     }
                   }}
-                  placeholder="素材を生成..."
-                  className="flex-1 px-3 py-2 text-sm border rounded bg-background"
+                  placeholder="メッセージを入力... (Shift+Enter: 改行)"
+                  className="flex-1 px-3 py-2 text-sm border border-input rounded-lg bg-background resize-none min-h-[44px] max-h-[120px] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                   disabled={generating}
+                  rows={1}
+                  style={{ height: 'auto', minHeight: '44px' }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+                  }}
                 />
                 <Button
-                  size="sm"
+                  size="icon"
                   onClick={handleChatSubmit}
                   disabled={generating || !chatInput.trim()}
+                  className="self-end h-10 w-10 rounded-lg shrink-0"
                 >
-                  送信
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                    <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                  </svg>
                 </Button>
               </div>
             </div>

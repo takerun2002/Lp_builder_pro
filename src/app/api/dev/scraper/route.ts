@@ -93,14 +93,21 @@ export async function POST(request: NextRequest): Promise<NextResponse<ScrapeRes
 
     const page = await context.newPage();
 
-    // Navigate to URL
+    // Navigate to URL (use domcontentloaded for faster initial load, then wait for network)
     await page.goto(url, {
-      waitUntil: "networkidle",
-      timeout: 30000,
+      waitUntil: "domcontentloaded",
+      timeout: 90000, // Extended timeout for slow LPs
     });
+    
+    // Try to wait for network idle, but don't fail if it times out
+    try {
+      await page.waitForLoadState("networkidle", { timeout: 15000 });
+    } catch {
+      console.log("[scraper] Network idle timeout, proceeding anyway");
+    }
 
     // Wait for page to stabilize
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
 
     // Scroll to load lazy content
     await autoScroll(page);
