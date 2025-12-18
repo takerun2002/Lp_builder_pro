@@ -54,7 +54,22 @@ export function ResearchProgressLog({
   void _onClear; // 将来使用予定
   const [expanded, setExpanded] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [newLogIds, setNewLogIds] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prevLogCountRef = useRef(0);
+
+  // 新しいログを検出してアニメーション用にマーク
+  useEffect(() => {
+    if (logs.length > prevLogCountRef.current) {
+      const newIds = new Set(logs.slice(prevLogCountRef.current).map((log) => log.id));
+      setNewLogIds(newIds);
+      // 300ms後にアニメーションクラスを削除
+      const timer = setTimeout(() => setNewLogIds(new Set()), 300);
+      prevLogCountRef.current = logs.length;
+      return () => clearTimeout(timer);
+    }
+    prevLogCountRef.current = logs.length;
+  }, [logs]);
 
   // 自動スクロール
   useEffect(() => {
@@ -195,7 +210,7 @@ export function ResearchProgressLog({
             ) : (
               <div className="space-y-1 font-mono text-xs">
                 {logs.map((log) => (
-                  <LogLine key={log.id} log={log} />
+                  <LogLine key={log.id} log={log} isNew={newLogIds.has(log.id)} />
                 ))}
               </div>
             )}
@@ -207,7 +222,7 @@ export function ResearchProgressLog({
 }
 
 // 個別ログ行
-function LogLine({ log }: { log: LogEntry }) {
+function LogLine({ log, isNew = false }: { log: LogEntry; isNew?: boolean }) {
   const time = log.timestamp.toLocaleTimeString("ja-JP");
 
   const getTypeColor = (type: LogEntry["type"]) => {
@@ -245,7 +260,9 @@ function LogLine({ log }: { log: LogEntry }) {
   };
 
   return (
-    <div className={`flex items-start gap-2 py-0.5 ${getTypeColor(log.type)}`}>
+    <div
+      className={`flex items-start gap-2 py-0.5 ${getTypeColor(log.type)} ${isNew ? "animate-in fade-in slide-in-from-left-2 duration-300" : ""}`}
+    >
       <span className="text-muted-foreground shrink-0">[{time}]</span>
       <span className="shrink-0">{getIcon(log.type)}</span>
       <span className="flex-1">

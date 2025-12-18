@@ -26,6 +26,7 @@ export interface CompetitorAnalysis {
   trustElements: string[];
   emotionalTriggers: string[];
   uniqueSellingPoints: string[];
+  thumbnailUrl?: string;  // OGP画像URL
 }
 
 export interface ConceptExtractionOptions {

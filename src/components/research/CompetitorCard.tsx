@@ -19,6 +19,7 @@ import {
   Clock,
   MessageSquare,
   DollarSign,
+  ImageOff,
 } from "lucide-react";
 import type { CompetitorAnalysis } from "@/lib/research/analyzers/concept-extractor";
 
@@ -51,13 +52,32 @@ export function CompetitorCard({
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-base leading-tight">
+        <div className="flex items-start gap-3">
+          {/* サムネイル */}
+          <div className="w-20 h-14 bg-muted rounded overflow-hidden flex-shrink-0">
+            {competitor.thumbnailUrl ? (
+              <img
+                src={competitor.thumbnailUrl}
+                alt={competitor.concept || "LP"}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = "none";
+                  (e.target as HTMLImageElement).nextElementSibling?.classList.remove("hidden");
+                }}
+              />
+            ) : null}
+            <div className={`w-full h-full flex items-center justify-center ${competitor.thumbnailUrl ? "hidden" : ""}`}>
+              <ImageOff className="w-6 h-6 text-muted-foreground/50" />
+            </div>
+          </div>
+
+          {/* コンテンツ */}
+          <div className="flex-1 min-w-0">
+            <CardTitle className="text-base leading-tight line-clamp-2">
               {competitor.concept || "コンセプト未検出"}
             </CardTitle>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-xs truncate max-w-[150px]">
                 {getDomain(competitor.url)}
               </Badge>
               <Button
