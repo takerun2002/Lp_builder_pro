@@ -10,3 +10,4 @@ export { GlobalRulesEditor } from "./GlobalRulesEditor";
 export { AIStructureGenerator } from "./AIStructureGenerator";
 export { TemplateLibrary } from "./TemplateLibrary";
 export { FigmaImporter } from "./FigmaImporter";
+export { CustomTemplateManager } from "./CustomTemplateManager";

@@ -8,3 +8,4 @@ export { PromptBuilder } from "./PromptBuilder";
 export { PromptEditor } from "./PromptEditor";
 export { SectionPromptCard } from "./SectionPromptCard";
 export { PromptHistoryPanel } from "./PromptHistory";
+export { PromptImportExport } from "./PromptImportExport";
