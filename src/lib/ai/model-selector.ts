@@ -24,7 +24,12 @@ export type TaskType =
   | "draft"
   | "test"
   | "rag_query"
-  | "embedding";
+  | "embedding"
+  | "structure_creation"
+  | "prompt_generation"
+  | "wireframe_analysis"
+  | "chat"
+  | "ocr";
 
 export interface ModelCapabilities {
   text_to_image?: boolean;
@@ -33,6 +38,8 @@ export interface ModelCapabilities {
   reasoning?: boolean;
   rag?: boolean;
   size?: boolean;
+  multimodal?: boolean;
+  agentic?: boolean;
 }
 
 export interface ModelConfig {

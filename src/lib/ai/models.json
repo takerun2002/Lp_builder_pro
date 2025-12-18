@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "models": [
     {
       "id": "nvidia-nemotron-3-nano",
@@ -15,7 +15,29 @@
       "timeoutSec": 60,
       "costTier": "low",
       "default": true,
-      "description": "🆓 無料・高性能MoEモデル（推奨）"
+      "description": "🆓 無料・高性能MoEモデル（チャット・壁打ち推奨）"
+    },
+    {
+      "id": "gemini-3-flash-preview",
+      "label": "Gemini 3.0 Flash ⚡",
+      "provider": "gemini",
+      "model": "gemini-3-flash-preview",
+      "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
+      "category": "llm",
+      "capabilities": {
+        "text_generation": true,
+        "reasoning": true,
+        "multimodal": true,
+        "agentic": true
+      },
+      "timeoutSec": 60,
+      "costTier": "low",
+      "pricing": {
+        "input": 0.50,
+        "output": 3.00,
+        "unit": "1M tokens"
+      },
+      "description": "⚡ Proグレード推論×Flash速度（$0.50/1M）- リサーチ・構成・プロンプト生成に最適"
     },
     {
       "id": "gemini-3-pro-preview",
@@ -26,11 +48,17 @@
       "category": "llm",
       "capabilities": {
         "text_generation": true,
-        "reasoning": true
+        "reasoning": true,
+        "multimodal": true
       },
       "timeoutSec": 120,
       "costTier": "high",
-      "description": "最高品質のテキスト生成・分析"
+      "pricing": {
+        "input": 2.00,
+        "output": 12.00,
+        "unit": "1M tokens"
+      },
+      "description": "最高品質のコピーライティング・深い推論が必要な場合"
     },
     {
       "id": "gemini-2.5-pro",
@@ -45,7 +73,7 @@
       },
       "timeoutSec": 120,
       "costTier": "medium",
-      "description": "バランス型、推論強化"
+      "description": "バランス型（レガシー）"
     },
     {
       "id": "gemini-2.5-flash",
@@ -60,7 +88,7 @@
       },
       "timeoutSec": 60,
       "costTier": "low",
-      "description": "高速・安価、下書き・テスト向け（Gemini）"
+      "description": "高速・安価（レガシー）"
     },
     {
       "id": "gemini-3-pro-image-preview",
@@ -168,33 +196,74 @@
     }
   ],
   "presets": {
-    "research": "nvidia-nemotron-3-nano",
+    "research": "gemini-3-flash-preview",
     "copywriting": "gemini-3-pro-preview",
     "image": "gemini-3-pro-image-preview",
     "test": "nvidia-nemotron-3-nano",
-    "embedding": "gemini-embedding-001"
+    "embedding": "gemini-embedding-001",
+    "structure": "gemini-3-flash-preview",
+    "prompt_generation": "gemini-3-flash-preview",
+    "chat": "nvidia-nemotron-3-nano"
   },
   "taskMapping": {
-    "analysis": "nvidia-nemotron-3-nano",
-    "research": "nvidia-nemotron-3-nano",
+    "analysis": "gemini-3-flash-preview",
+    "research": "gemini-3-flash-preview",
     "copywriting": "gemini-3-pro-preview",
-    "summarization": "nvidia-nemotron-3-nano",
-    "translation": "nvidia-nemotron-3-nano",
+    "summarization": "gemini-3-flash-preview",
+    "translation": "gemini-3-flash-preview",
     "image_generation": "gemini-3-pro-image-preview",
     "image_editing": "gemini-3-pro-image-preview",
     "draft": "nvidia-nemotron-3-nano",
     "test": "nvidia-nemotron-3-nano",
-    "rag_query": "nvidia-nemotron-3-nano",
-    "embedding": "gemini-embedding-001"
+    "rag_query": "gemini-3-flash-preview",
+    "embedding": "gemini-embedding-001",
+    "structure_creation": "gemini-3-flash-preview",
+    "prompt_generation": "gemini-3-flash-preview",
+    "wireframe_analysis": "gemini-3-flash-preview",
+    "chat": "nvidia-nemotron-3-nano",
+    "ocr": "gemini-3-flash-preview"
   },
   "modelPriority": {
     "free": ["nvidia-nemotron-3-nano"],
-    "low": ["gemini-2.5-flash", "gemini-2.5-pro"],
+    "low": ["gemini-3-flash-preview", "gemini-2.5-flash"],
+    "medium": ["gemini-2.5-pro"],
     "high": ["gemini-3-pro-preview"]
   },
+  "workflowRecommendations": {
+    "リサーチ": {
+      "model": "gemini-3-flash-preview",
+      "reason": "高速・安価（$0.50/1M）で推論能力が高く、大量データ処理に最適"
+    },
+    "構成作成": {
+      "model": "gemini-3-flash-preview",
+      "reason": "Proグレード推論×Flash速度、反復作業に最適"
+    },
+    "プロンプト生成": {
+      "model": "gemini-3-flash-preview",
+      "reason": "マルチモーダル対応、エージェント型ワークフローに最適化"
+    },
+    "コピーライティング": {
+      "model": "gemini-3-pro-preview",
+      "reason": "最高品質が必要な最終成果物には Pro を推奨"
+    },
+    "画像生成": {
+      "model": "gemini-3-pro-image-preview",
+      "reason": "Nano Banana Pro（最高品質の画像生成）"
+    },
+    "チャット・壁打ち": {
+      "model": "nvidia-nemotron-3-nano",
+      "reason": "無料で十分な性能、コスト0"
+    },
+    "OCR・文字認識": {
+      "model": "gemini-3-flash-preview",
+      "reason": "マルチモーダル対応、高速処理"
+    }
+  },
   "notes": {
-    "nvidia-nemotron-3-nano": "OpenRouterで無料利用可能。エージェント型AIシステム向けに最適化されたNVIDIAのオープンソースMoEモデル。基本的な推論・分析タスクに推奨。",
-    "gemini-3-pro-preview": "高品質なコピーライティング・深い推論が必要な場合に使用。",
-    "gemini-2.5-flash": "Gemini APIのみ使用時のフォールバック。"
+    "nvidia-nemotron-3-nano": "OpenRouterで無料利用可能。チャット・壁打ち・テストに最適。",
+    "gemini-3-flash-preview": "⭐ 最もコスパが良いモデル。Proグレード推論を3倍高速・69%安価で実現。リサーチ・構成・プロンプト生成の主力。",
+    "gemini-3-pro-preview": "最高品質。コピーライティングなど最終成果物に使用。",
+    "gemini-2.5-pro": "レガシー。特別な理由がなければ3.0 Flashを推奨。",
+    "gemini-2.5-flash": "レガシー。3.0 Flashへの移行を推奨。"
   }
 }
