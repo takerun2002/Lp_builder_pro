@@ -125,8 +125,9 @@ export default function WorkspacePage() {
   
   // Panel widths (resizable)
   const [paletteWidth, setPaletteWidth] = useState(220);
+  const [referenceWidth, setReferenceWidth] = useState(280);
   const [chatWidth, setChatWidth] = useState(280);
-  const isResizingRef = useRef<"palette" | "chat" | null>(null);
+  const isResizingRef = useRef<"palette" | "reference" | "chat" | null>(null);
   const resizeStartXRef = useRef(0);
   const resizeStartWidthRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -194,21 +195,25 @@ export default function WorkspacePage() {
   // Panel Resize
   // ============================================================
 
-  const handleResizeStart = useCallback((panel: "palette" | "chat", e: React.MouseEvent) => {
+  const handleResizeStart = useCallback((panel: "palette" | "reference" | "chat", e: React.MouseEvent) => {
     isResizingRef.current = panel;
     resizeStartXRef.current = e.clientX;
-    resizeStartWidthRef.current = panel === "palette" ? paletteWidth : chatWidth;
+    resizeStartWidthRef.current = panel === "palette" ? paletteWidth : panel === "reference" ? referenceWidth : chatWidth;
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
-  }, [paletteWidth, chatWidth]);
+  }, [paletteWidth, referenceWidth, chatWidth]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizingRef.current) return;
       const delta = e.clientX - resizeStartXRef.current;
-      const newWidth = Math.max(150, Math.min(400, resizeStartWidthRef.current + (isResizingRef.current === "palette" ? delta : -delta)));
+      // palette: 右にドラッグで広がる、reference/chat: 左にドラッグで広がる
+      const direction = isResizingRef.current === "palette" ? 1 : -1;
+      const newWidth = Math.max(150, Math.min(400, resizeStartWidthRef.current + delta * direction));
       if (isResizingRef.current === "palette") {
         setPaletteWidth(newWidth);
+      } else if (isResizingRef.current === "reference") {
+        setReferenceWidth(newWidth);
       } else {
         setChatWidth(newWidth);
       }
@@ -1059,7 +1064,15 @@ export default function WorkspacePage() {
 
         {/* Reference LP Panel */}
         {showReference && (
-          <div className="border-l bg-card flex flex-col shrink-0 w-[300px]">
+          <div
+            className="border-l bg-card flex flex-col shrink-0 relative"
+            style={{ width: referenceWidth }}
+          >
+            {/* Resize Handle */}
+            <div
+              className="absolute left-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors z-10"
+              onMouseDown={(e) => handleResizeStart("reference", e)}
+            />
             <ReferencePanel
               projectId={projectId}
               swipeFiles={swipeFiles}
