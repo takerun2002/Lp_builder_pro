@@ -515,6 +515,7 @@ export async function analyzeInfotopProductWithAI(
     concept: string;
     targetPain: string;
     benefit: string;
+    productPageUrl?: string;
   }[];
   priceInsights: {
     average: number;
@@ -536,6 +537,7 @@ ${genre ? `## ジャンル: ${genre}` : ""}
 2. 価格帯の傾向
 3. ターゲットの悩み
 4. 提供ベネフィット
+5. 商品詳細ページURL（infotop.jp/... 形式）があれば抽出
 
 ## 出力形式（JSON）
 \`\`\`json
@@ -547,7 +549,8 @@ ${genre ? `## ジャンル: ${genre}` : ""}
       "price": 29800,
       "concept": "コンセプト（21文字以内）",
       "targetPain": "ターゲットの悩み",
-      "benefit": "提供ベネフィット"
+      "benefit": "提供ベネフィット",
+      "productPageUrl": "https://www.infotop.jp/..."
     }
   ],
   "priceInsights": {
@@ -557,7 +560,9 @@ ${genre ? `## ジャンル: ${genre}` : ""}
   },
   "conceptPatterns": ["〇〇だけで〜", "たった〇〇日で〜"]
 }
-\`\`\``;
+\`\`\`
+
+productPageUrlはURLが見つからない場合は省略してください。`;
 
   try {
     const response = await generateText(prompt, { model: "flash" });
@@ -587,6 +592,81 @@ ${genre ? `## ジャンル: ${genre}` : ""}
 }
 
 // ============================================================
+// Infotop商品詳細ページ分析
+// ============================================================
+
+/**
+ * Infotopの商品詳細ページからLP URLとマーケティング情報を抽出
+ */
+export async function analyzeInfotopProductPage(
+  markdown: string
+): Promise<{
+  lpUrl: string | null;
+  salesCopy: string;
+  targetPain: string[];
+  benefits: string[];
+  priceStrategy: string;
+  concept: string;
+}> {
+  const prompt = `あなたはInfotop商品ページの分析エキスパートです。
+以下はInfotopの商品詳細ページです。
+販売ページ（LP）のURLと、マーケティング情報を抽出してください。
+
+## 抽出項目
+1. lpUrl: 「販売ページを見る」「LPを見る」「商品詳細」等のリンク先URL（http/https始まり）
+2. salesCopy: キャッチコピー・セールスコピー（商品名以外の訴求文）
+3. targetPain: ターゲットの悩み（配列、最大5つ）
+4. benefits: ベネフィット・メリット（配列、最大5つ）
+5. priceStrategy: 価格戦略の分析（高額/中価格/低価格、分割有無、特典有無等）
+6. concept: この商品のコンセプトを21文字以内で要約
+
+## 出力形式（JSON）
+\`\`\`json
+{
+  "lpUrl": "https://...",
+  "salesCopy": "...",
+  "targetPain": ["悩み1", "悩み2"],
+  "benefits": ["ベネフィット1", "ベネフィット2"],
+  "priceStrategy": "中価格帯（29,800円）、分割払い対応、特典3つ付き",
+  "concept": "21文字以内のコンセプト"
+}
+\`\`\`
+
+lpUrlが見つからない場合は null としてください。
+
+---
+${markdown.slice(0, 10000)}`;
+
+  try {
+    const response = await generateText(prompt, { model: "flash" });
+    const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
+
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[1]);
+      return {
+        lpUrl: parsed.lpUrl || null,
+        salesCopy: parsed.salesCopy || "",
+        targetPain: parsed.targetPain || [],
+        benefits: parsed.benefits || [],
+        priceStrategy: parsed.priceStrategy || "",
+        concept: parsed.concept || "",
+      };
+    }
+  } catch (err) {
+    console.error("[ai-analyzer] Infotop product page analysis error:", err);
+  }
+
+  return {
+    lpUrl: null,
+    salesCopy: "",
+    targetPain: [],
+    benefits: [],
+    priceStrategy: "",
+    concept: "",
+  };
+}
+
+// ============================================================
 // エクスポート
 // ============================================================
 
@@ -597,6 +677,7 @@ export const AIAnalyzer = {
   extractKeywords: extractKeywordsWithAI,
   calculateSimilarity: calculateSimilarityWithAI,
   analyzeInfotopProduct: analyzeInfotopProductWithAI,
+  analyzeInfotopProductPage,
 };
 
 export default AIAnalyzer;

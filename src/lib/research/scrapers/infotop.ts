@@ -6,7 +6,7 @@
  */
 
 import { scrapeUrl, analyzeLPStructure } from "../firecrawl";
-import { analyzeLPWithAI, analyzeInfotopProductWithAI } from "../ai-analyzer";
+import { analyzeLPWithAI, analyzeInfotopProductWithAI, analyzeInfotopProductPage } from "../ai-analyzer";
 import type { InfotopResult, LPStructure, SectionType } from "../types";
 
 const INFOTOP_RANKING_URL = "https://www.infotop.jp/uc/index/ranking";
@@ -108,7 +108,11 @@ export async function scrapeInfotopRanking(
         productName: p.name,
         genre: options?.genre || "",
         price: p.price,
-        lpUrl: "", // AI分析ではURLは取得できない
+        lpUrl: "", // LP URLは商品詳細ページから取得する
+        productPageUrl: p.productPageUrl, // 商品詳細ページURL
+        concept: p.concept,
+        targetPain: p.targetPain ? [p.targetPain] : undefined,
+        benefits: p.benefit ? [p.benefit] : undefined,
       }));
     }
 
@@ -195,7 +199,11 @@ export async function scrapeInfotopRankingWithAnalysis(
           productName: p.name,
           genre: options?.genre || "",
           price: p.price,
-          lpUrl: "", // AI分析ではURLは取得できない
+          lpUrl: "", // LP URLは商品詳細ページから取得する
+          productPageUrl: p.productPageUrl,
+          concept: p.concept,
+          targetPain: p.targetPain ? [p.targetPain] : undefined,
+          benefits: p.benefit ? [p.benefit] : undefined,
         })),
         priceInsights: aiResult.priceInsights,
         conceptPatterns: aiResult.conceptPatterns,
@@ -292,6 +300,134 @@ export async function scrapeInfotopLP(
     console.error("[infotop] LP scrape error:", err);
     return null;
   }
+}
+
+/**
+ * 商品詳細ページからLP URLとマーケティング情報を抽出
+ */
+export async function extractLPUrlFromProduct(
+  productPageUrl: string
+): Promise<{
+  lpUrl: string | null;
+  salesCopy: string | null;
+  targetPain: string[] | null;
+  benefits: string[] | null;
+  priceStrategy: string | null;
+  concept: string | null;
+}> {
+  console.log(`[infotop] Extracting LP URL from: ${productPageUrl}`);
+
+  try {
+    // 商品詳細ページをスクレイプ
+    const result = await scrapeUrl(productPageUrl, {
+      formats: ["markdown"],
+      onlyMainContent: false,
+      waitFor: 3000,
+    });
+
+    if (!result.markdown) {
+      console.warn("[infotop] No markdown from product page");
+      return {
+        lpUrl: null,
+        salesCopy: null,
+        targetPain: null,
+        benefits: null,
+        priceStrategy: null,
+        concept: null,
+      };
+    }
+
+    // AIで分析
+    const analysis = await analyzeInfotopProductPage(result.markdown);
+
+    return {
+      lpUrl: analysis.lpUrl,
+      salesCopy: analysis.salesCopy || null,
+      targetPain: analysis.targetPain.length > 0 ? analysis.targetPain : null,
+      benefits: analysis.benefits.length > 0 ? analysis.benefits : null,
+      priceStrategy: analysis.priceStrategy || null,
+      concept: analysis.concept || null,
+    };
+  } catch (err) {
+    console.error("[infotop] Extract LP URL error:", err);
+    return {
+      lpUrl: null,
+      salesCopy: null,
+      targetPain: null,
+      benefits: null,
+      priceStrategy: null,
+      concept: null,
+    };
+  }
+}
+
+/**
+ * ランキング取得後に各商品のLP URLを取得（並列処理）
+ */
+export async function scrapeInfotopRankingWithLPUrls(
+  options?: InfotopScrapeOptions
+): Promise<InfotopResult[]> {
+  console.log("[infotop] Scraping ranking with LP URLs...");
+
+  // まずランキングを取得
+  const ranking = await scrapeInfotopRanking(options);
+
+  if (ranking.length === 0) {
+    console.warn("[infotop] No ranking results");
+    return [];
+  }
+
+  // productPageUrl が無い商品は直接返す
+  const productsWithPageUrl = ranking.filter((p) => p.productPageUrl);
+  const productsWithoutPageUrl = ranking.filter((p) => !p.productPageUrl);
+
+  if (productsWithPageUrl.length === 0) {
+    console.log("[infotop] No products with page URLs, returning basic ranking");
+    return ranking;
+  }
+
+  // 各商品の詳細ページからLP URLを取得（最大5件並列）
+  const batchSize = 5;
+  const enhanced: InfotopResult[] = [...productsWithoutPageUrl];
+
+  for (let i = 0; i < productsWithPageUrl.length; i += batchSize) {
+    const batch = productsWithPageUrl.slice(i, i + batchSize);
+
+    const results = await Promise.all(
+      batch.map(async (product) => {
+        if (!product.productPageUrl) return product;
+
+        try {
+          const details = await extractLPUrlFromProduct(product.productPageUrl);
+          return {
+            ...product,
+            lpUrl: details.lpUrl || product.lpUrl,
+            salesCopy: details.salesCopy || undefined,
+            targetPain: details.targetPain || undefined,
+            benefits: details.benefits || undefined,
+            priceStrategy: details.priceStrategy || undefined,
+            concept: details.concept || undefined,
+          };
+        } catch {
+          return product;
+        }
+      })
+    );
+
+    enhanced.push(...results);
+
+    // レート制限対策
+    if (i + batchSize < productsWithPageUrl.length) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+
+  // ランク順にソート
+  enhanced.sort((a, b) => a.rank - b.rank);
+
+  console.log(`[infotop] Enhanced ${enhanced.filter((p) => p.lpUrl).length}/${enhanced.length} products with LP URLs`);
+
+  return enhanced;
 }
 
 /**

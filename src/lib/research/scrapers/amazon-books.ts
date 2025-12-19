@@ -32,6 +32,21 @@ export interface AmazonBookResult {
   category?: string;
   rank?: number;
   scrapedAt: string;
+  // AI パワーワード分析（拡張）
+  aiPowerWordAnalysis?: AIPowerWordAnalysis;
+}
+
+// AIパワーワード分析の型
+export interface AIPowerWordAnalysis {
+  emotionalTriggers: string[];       // 感情トリガーワード
+  curiosityHooks: string[];          // 好奇心フック
+  benefitPromises: string[];         // ベネフィット約束
+  targetPainPoints: string[];        // ターゲットの悩み
+  urgencyDrivers: string[];          // 緊急性ドライバー
+  socialProofElements: string[];     // 社会的証明要素
+  uniqueAngle: string;               // ユニークな切り口
+  lpHeadlineIdeas: string[];         // LP見出しアイデア
+  whyItSells: string;                // 売れている理由
 }
 
 export interface AmazonBookSearchOptions {
@@ -656,6 +671,210 @@ function generateRecommendations(
 }
 
 // ============================================================
+// AIパワーワード分析
+// ============================================================
+
+/**
+ * 書籍タイトルからパワーワードをAI分析
+ */
+export async function extractPowerWordsWithAI(
+  book: AmazonBookResult
+): Promise<AIPowerWordAnalysis> {
+  const prompt = `あなたはコピーライティングと書籍マーケティングのエキスパートです。
+以下のAmazonベストセラー書籍を分析し、LPやセールスレターに活用できるパワーワードを抽出してください。
+
+## 書籍情報
+タイトル: ${book.title}
+${book.subtitle ? `サブタイトル: ${book.subtitle}` : ""}
+著者: ${book.author}
+評価: ${book.rating}点 (${book.reviewCount}件のレビュー)
+${book.price ? `価格: ${book.priceFormatted}` : ""}
+
+## 既存の分析結果
+抽出キーワード: ${book.extractedKeywords.join("、")}
+コンセプトパターン: ${book.conceptPatterns.join("、")}
+
+## 分析観点
+1. 感情トリガーワード: 読者の感情を動かす言葉
+2. 好奇心フック: 「続きが気になる」と思わせる表現
+3. ベネフィット約束: 読者が得られる具体的メリット
+4. ターゲットの悩み: この本を買う人が抱えている悩み
+5. 緊急性ドライバー: 「今すぐ」行動させる要素
+6. 社会的証明要素: 信頼性を高める要素
+7. ユニークな切り口: 他と差別化されているポイント
+8. LP見出しアイデア: この書籍タイトルを参考にしたLP見出し案（3つ）
+9. 売れている理由: なぜこの本がベストセラーなのか
+
+## 出力形式（JSON）
+\`\`\`json
+{
+  "emotionalTriggers": ["自信", "不安解消", "成功"],
+  "curiosityHooks": ["なぜ〜なのか", "〜の秘密"],
+  "benefitPromises": ["7日で効果実感", "収入が2倍に"],
+  "targetPainPoints": ["時間がない", "続かない", "自信がない"],
+  "urgencyDrivers": ["今だけ", "期間限定", "先着"],
+  "socialProofElements": ["10万部突破", "専門家推薦"],
+  "uniqueAngle": "従来の〇〇とは真逆のアプローチ",
+  "lpHeadlineIdeas": [
+    "たった7日で〇〇を手に入れる方法",
+    "なぜあなたの〇〇はうまくいかないのか",
+    "〇〇をやめたら人生が変わった"
+  ],
+  "whyItSells": "シンプルで具体的な数字と逆説的アプローチが読者の興味を引く"
+}
+\`\`\``;
+
+  try {
+    const response = await generateText(prompt, { model: "flash" });
+    const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
+
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[1]);
+      return {
+        emotionalTriggers: parsed.emotionalTriggers || [],
+        curiosityHooks: parsed.curiosityHooks || [],
+        benefitPromises: parsed.benefitPromises || [],
+        targetPainPoints: parsed.targetPainPoints || [],
+        urgencyDrivers: parsed.urgencyDrivers || [],
+        socialProofElements: parsed.socialProofElements || [],
+        uniqueAngle: parsed.uniqueAngle || "",
+        lpHeadlineIdeas: parsed.lpHeadlineIdeas || [],
+        whyItSells: parsed.whyItSells || "",
+      };
+    }
+  } catch (err) {
+    console.error("[amazon-books] AI power word extraction error:", err);
+  }
+
+  // フォールバック
+  return {
+    emotionalTriggers: [],
+    curiosityHooks: [],
+    benefitPromises: [],
+    targetPainPoints: [],
+    urgencyDrivers: [],
+    socialProofElements: [],
+    uniqueAngle: "",
+    lpHeadlineIdeas: [],
+    whyItSells: "",
+  };
+}
+
+/**
+ * 複数の書籍をバッチでAI分析
+ */
+export async function batchExtractPowerWords(
+  books: AmazonBookResult[],
+  options: { maxConcurrent?: number; topN?: number } = {}
+): Promise<AmazonBookResult[]> {
+  const { maxConcurrent = 3, topN = 10 } = options;
+
+  // レビュー数・評価でソートして上位のみ分析
+  const sortedBooks = [...books]
+    .sort((a, b) => {
+      // レビュー数×評価でスコアリング
+      const scoreA = a.reviewCount * a.rating;
+      const scoreB = b.reviewCount * b.rating;
+      return scoreB - scoreA;
+    })
+    .slice(0, topN);
+
+  console.log(`[amazon-books] Batch analyzing top ${sortedBooks.length} books with AI`);
+
+  const results: AmazonBookResult[] = [];
+
+  // バッチ処理（並列数制限）
+  for (let i = 0; i < sortedBooks.length; i += maxConcurrent) {
+    const batch = sortedBooks.slice(i, i + maxConcurrent);
+
+    const batchResults = await Promise.all(
+      batch.map(async (book) => {
+        const analysis = await extractPowerWordsWithAI(book);
+        return { ...book, aiPowerWordAnalysis: analysis };
+      })
+    );
+
+    results.push(...batchResults);
+
+    // レート制限対策
+    if (i + maxConcurrent < sortedBooks.length) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+
+  // 分析されなかった書籍を追加
+  const analyzedAsins = new Set(results.map((r) => r.asin));
+  const remainingBooks = books.filter((b) => !analyzedAsins.has(b.asin));
+  results.push(...remainingBooks);
+
+  return results;
+}
+
+/**
+ * 複数書籍のパワーワードを集約
+ */
+export function aggregatePowerWords(
+  books: AmazonBookResult[]
+): {
+  topEmotionalTriggers: string[];
+  topCuriosityHooks: string[];
+  topBenefitPromises: string[];
+  topTargetPainPoints: string[];
+  allLpHeadlineIdeas: string[];
+  commonPatterns: string[];
+} {
+  const analyzedBooks = books.filter((b) => b.aiPowerWordAnalysis);
+
+  const allEmotionalTriggers: string[] = [];
+  const allCuriosityHooks: string[] = [];
+  const allBenefitPromises: string[] = [];
+  const allTargetPainPoints: string[] = [];
+  const allLpHeadlineIdeas: string[] = [];
+
+  for (const book of analyzedBooks) {
+    const analysis = book.aiPowerWordAnalysis!;
+    allEmotionalTriggers.push(...analysis.emotionalTriggers);
+    allCuriosityHooks.push(...analysis.curiosityHooks);
+    allBenefitPromises.push(...analysis.benefitPromises);
+    allTargetPainPoints.push(...analysis.targetPainPoints);
+    allLpHeadlineIdeas.push(...analysis.lpHeadlineIdeas);
+  }
+
+  // 頻度カウントしてトップを抽出
+  const countAndTop = (arr: string[], topN: number): string[] => {
+    const counts: Record<string, number> = {};
+    arr.forEach((item) => {
+      counts[item] = (counts[item] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, topN)
+      .map(([item]) => item);
+  };
+
+  // コンセプトパターンの共通パターン
+  const allPatterns = books.flatMap((b) => b.conceptPatterns);
+  const patternCounts: Record<string, number> = {};
+  allPatterns.forEach((p) => {
+    patternCounts[p] = (patternCounts[p] || 0) + 1;
+  });
+  const commonPatterns = Object.entries(patternCounts)
+    .filter(([, count]) => count >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([p]) => p);
+
+  return {
+    topEmotionalTriggers: countAndTop(allEmotionalTriggers, 10),
+    topCuriosityHooks: countAndTop(allCuriosityHooks, 10),
+    topBenefitPromises: countAndTop(allBenefitPromises, 10),
+    topTargetPainPoints: countAndTop(allTargetPainPoints, 10),
+    allLpHeadlineIdeas: Array.from(new Set(allLpHeadlineIdeas)).slice(0, 20),
+    commonPatterns,
+  };
+}
+
+// ============================================================
 // ユーティリティ
 // ============================================================
 
@@ -763,6 +982,10 @@ export const AmazonBooksResearch = {
   analyze: analyzeAmazonBooks,
   enrichBookData,
   buildProductUrl,
+  // AIパワーワード分析
+  extractPowerWords: extractPowerWordsWithAI,
+  batchExtractPowerWords,
+  aggregatePowerWords,
 };
 
 export default AmazonBooksResearch;

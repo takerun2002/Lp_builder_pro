@@ -28,12 +28,14 @@ import {
 
 export type ResearchStep =
   | "init"
-  | "competitor_search"
-  | "competitor_analysis"
+  | "infotop_analysis"       // 新: Infotop分析（確実にLPが取れる）
+  | "pain_collection"        // 新: 悩み収集（知恵袋+Amazon）
   | "pain_classification"
   | "keyword_ranking"
   | "concept_generation"
-  | "complete";
+  | "complete"
+  | "competitor_search"      // 任意: 競合LP発見（精度低）
+  | "competitor_analysis";   // 任意: 競合LP分析
 
 export interface StepConfig {
   id: ResearchStep;
@@ -75,27 +77,26 @@ export const RESEARCH_STEPS: StepConfig[] = [
     estimatedTime: "1-2分",
   },
   {
-    id: "competitor_search",
-    title: "競合LP発見",
-    description: "Google検索で競合LPを自動発見",
+    id: "infotop_analysis",
+    title: "Infotop分析",
+    description: "売れている商品・LP・コピーを分析（確実にLPが取れる）",
     estimatedTime: "2-3分",
-    isOptional: true,
   },
   {
-    id: "competitor_analysis",
-    title: "競合LP分析",
-    description: "競合LPからコンセプト・キーワードを抽出",
-    estimatedTime: "3-5分",
+    id: "pain_collection",
+    title: "悩み収集",
+    description: "Yahoo知恵袋・Amazon書籍から悩みを収集",
+    estimatedTime: "2-3分",
   },
   {
     id: "pain_classification",
-    title: "ペインポイント分類",
+    title: "悩み分類",
     description: "悩みを深度×緊急性で4象限に分類",
     estimatedTime: "1-2分",
   },
   {
     id: "keyword_ranking",
-    title: "キーワードランキング",
+    title: "キーワード分析",
     description: "収集キーワードをスコアリング・ランキング",
     estimatedTime: "1-2分",
   },
@@ -110,6 +111,24 @@ export const RESEARCH_STEPS: StepConfig[] = [
     title: "完了",
     description: "リサーチ結果のサマリーを確認",
     estimatedTime: "-",
+  },
+];
+
+// オプショナルステップ（非推奨）
+export const OPTIONAL_RESEARCH_STEPS: StepConfig[] = [
+  {
+    id: "competitor_search",
+    title: "競合LP発見（非推奨）",
+    description: "Google検索で競合LPを発見（精度が低いため非推奨）",
+    estimatedTime: "2-3分",
+    isOptional: true,
+  },
+  {
+    id: "competitor_analysis",
+    title: "競合LP分析",
+    description: "競合LPからコンセプト・キーワードを抽出",
+    estimatedTime: "3-5分",
+    isOptional: true,
   },
 ];
 

@@ -434,9 +434,28 @@ export interface InfotopResult {
   productName: string;
   genre: string;
   price: number;
-  lpUrl: string;
+  lpUrl: string;                // 販売ページURL
+  productPageUrl?: string;      // 商品詳細ページURL (infotop.jp/...)
+  affiliateUrl?: string;        // アフィリエイトリンク
+  productId?: string;           // 商品ID
   screenshotUrl?: string;
   structure?: LPStructure;
+  // AI分析による追加情報
+  salesCopy?: string;           // キャッチコピー
+  targetPain?: string[];        // ターゲットの悩み
+  benefits?: string[];          // ベネフィット
+  priceStrategy?: string;       // 価格戦略
+  concept?: string;             // コンセプト（21文字以内）
+}
+
+// Infotop商品詳細ページ分析結果
+export interface InfotopProductAnalysis {
+  lpUrl: string | null;
+  salesCopy: string;
+  targetPain: string[];
+  benefits: string[];
+  priceStrategy: string;
+  concept: string;
 }
 
 // === 競合LP結果 ===

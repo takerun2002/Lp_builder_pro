@@ -78,10 +78,24 @@ const LF8_OPTIONS: { id: LF8Type; label: string; description: string; icon: stri
 
 interface ResearchData {
   context: ResearchContext | null;
+  infotopProducts: InfotopProduct[];  // 新: Infotop商品
   competitors: CompetitorAnalysis[];
   painPoints: ClassifiedPainPoint[];
+  collectedPains: string[];            // 新: 収集した悩み（知恵袋+Amazon）
   keywords: KeywordRankingResult | null;
   concepts: ConceptCandidate[];
+}
+
+// Infotop商品の簡易型
+interface InfotopProduct {
+  rank: number;
+  productName: string;
+  price: number;
+  lpUrl: string;
+  salesCopy?: string;
+  targetPain?: string[];
+  benefits?: string[];
+  concept?: string;
 }
 
 interface HybridCostStats {
@@ -168,8 +182,10 @@ export default function ResearchPage() {
   // リサーチデータ
   const [data, setData] = useState<ResearchData>({
     context: null,
+    infotopProducts: [],
     competitors: [],
     painPoints: [],
+    collectedPains: [],
     keywords: null,
     concepts: [],
   });
@@ -267,6 +283,12 @@ export default function ResearchPage() {
 
     try {
       switch (step) {
+        case "infotop_analysis":
+          await runInfotopStep();
+          break;
+        case "pain_collection":
+          await runPainCollectionStep();
+          break;
         case "competitor_search":
         case "competitor_analysis":
           await runCompetitorStep();
@@ -286,6 +308,125 @@ export default function ResearchPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "エラーが発生しました");
     }
+  };
+
+  // Infotop分析ステップ（新）
+  const runInfotopStep = async () => {
+    setIsRunning(true);
+    addLog("progress", "🏪 Infotop分析を開始します...");
+
+    await wizard.runStep("infotop_analysis", async () => {
+      addLog("info", "Infotopランキングを取得中...");
+
+      const res = await fetch("/api/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          context: data.context,
+          sources: ["infotop"],
+          step: "infotop",
+        }),
+      });
+      const result = await res.json();
+
+      if (!result.success) {
+        addLog("error", `エラー: ${result.error}`);
+        throw new Error(result.error);
+      }
+
+      const products = result.infotopResults || [];
+      addLog("success", `${products.length}件の商品を発見しました`, { count: products.length });
+
+      products.forEach((p: InfotopProduct, i: number) => {
+        addLog("info", `${i + 1}. ${p.productName} (¥${p.price?.toLocaleString() || "?"})`, {
+          url: p.lpUrl || undefined,
+        });
+      });
+
+      setData((prev) => ({ ...prev, infotopProducts: products }));
+      return products;
+    });
+
+    setIsRunning(false);
+    addLog("success", "Infotop分析ステップ完了");
+    wizard.nextStep();
+  };
+
+  // 悩み収集ステップ（新）
+  const runPainCollectionStep = async () => {
+    setIsRunning(true);
+    addLog("progress", "😢 悩み収集を開始します...");
+
+    await wizard.runStep("pain_collection", async () => {
+      const collectedPains: string[] = [];
+
+      // Infotopから悩みを収集
+      data.infotopProducts.forEach((p) => {
+        if (p.targetPain) {
+          collectedPains.push(...p.targetPain);
+        }
+      });
+
+      // Yahoo知恵袋から収集
+      addLog("info", "Yahoo知恵袋から悩みを収集中...");
+      try {
+        const chiebukuroRes = await fetch("/api/research", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            context: data.context,
+            sources: ["chiebukuro"],
+            step: "chiebukuro",
+          }),
+        });
+        const chiebukuroResult = await chiebukuroRes.json();
+        if (chiebukuroResult.success && chiebukuroResult.chiebukuroResults) {
+          const pains = chiebukuroResult.chiebukuroResults
+            .map((r: { question?: string }) => r.question)
+            .filter(Boolean);
+          collectedPains.push(...pains);
+          addLog("success", `Yahoo知恵袋から${pains.length}件の悩みを収集`);
+        }
+      } catch {
+        addLog("warning", "Yahoo知恵袋の収集に失敗しました");
+      }
+
+      // Amazon書籍から収集
+      addLog("info", "Amazon書籍からキーワードを収集中...");
+      try {
+        const amazonRes = await fetch("/api/research", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            context: data.context,
+            sources: ["amazon_books"],
+            step: "amazon_books",
+          }),
+        });
+        const amazonResult = await amazonRes.json();
+        if (amazonResult.success && amazonResult.amazonResults) {
+          const titles = amazonResult.amazonResults
+            .map((r: { title?: string }) => r.title)
+            .filter(Boolean);
+          addLog("success", `Amazon書籍から${titles.length}件のタイトルを収集`);
+        }
+      } catch {
+        addLog("warning", "Amazon書籍の収集に失敗しました");
+      }
+
+      // ユーザー入力の悩みも追加
+      if (data.context?.target.problems) {
+        collectedPains.push(data.context.target.problems);
+      }
+
+      addLog("success", `合計${collectedPains.length}件の悩みを収集しました`);
+      setData((prev) => ({ ...prev, collectedPains }));
+      return collectedPains;
+    });
+
+    setIsRunning(false);
+    addLog("success", "悩み収集ステップ完了");
+    wizard.nextStep();
   };
 
   // 競合分析ステップ
@@ -335,30 +476,45 @@ export default function ResearchPage() {
   const runPainClassificationStep = async () => {
     setIsRunning(true);
     addLog("progress", "😢 悩み・課題の分類を開始します...");
-    
-    await wizard.runStep("pain_classification", async () => {
-      // 競合から悩みを収集
-      const painTexts = data.competitors
-        .map((c) => c.targetPain)
-        .filter(Boolean);
 
-      // 追加の悩みテキストがあれば追加
+    await wizard.runStep("pain_classification", async () => {
+      // 収集した悩みを使用（新しいフロー）
+      const painTexts = [...data.collectedPains];
+
+      // 競合からも追加（旧フローとの互換性）
+      data.competitors.forEach((c) => {
+        if (c.targetPain) {
+          painTexts.push(c.targetPain);
+        }
+      });
+
+      // Infotopからも追加
+      data.infotopProducts.forEach((p) => {
+        if (p.targetPain) {
+          painTexts.push(...p.targetPain);
+        }
+      });
+
+      // ユーザー入力の悩みも追加
       if (data.context?.target.problems) {
         painTexts.push(data.context.target.problems);
       }
 
-      if (painTexts.length === 0) {
-        addLog("warning", "分類する悩みデータがありません");
+      // 重複除去
+      const uniquePains = Array.from(new Set(painTexts)).filter(Boolean);
+
+      if (uniquePains.length === 0) {
+        addLog("warning", "分類する悩みデータがありません。悩み収集ステップを先に実行してください。");
         throw new Error("分類する悩みがありません");
       }
-      
-      addLog("info", `${painTexts.length}件の悩みテキストを分析中...`, { count: painTexts.length });
+
+      addLog("info", `${uniquePains.length}件の悩みテキストを分析中...`, { count: uniquePains.length });
 
       const res = await fetch("/api/research/pain-points", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          painPoints: painTexts,
+          painPoints: uniquePains,
           context: data.context,
         }),
       });
@@ -380,8 +536,16 @@ export default function ResearchPage() {
   const runKeywordRankingStep = async () => {
     setIsRunning(true);
     addLog("progress", "🔑 キーワードランキングを開始します...");
-    
+
     await wizard.runStep("keyword_ranking", async () => {
+      // Infotopからキーワードを収集
+      const infotopKeywords = data.infotopProducts.flatMap((p) => [
+        p.productName,
+        p.concept || "",
+        p.salesCopy || "",
+        ...(p.benefits || []),
+      ]).filter(Boolean);
+
       // 競合からキーワードを収集
       const competitorKeywords = data.competitors.flatMap((c) => [
         ...c.powerWords,
@@ -391,8 +555,8 @@ export default function ResearchPage() {
 
       // ペインポイントからキーワードを収集
       const painKeywords = data.painPoints.flatMap((p) => p.keywords);
-      
-      addLog("info", `競合から${competitorKeywords.length}件、悩みから${painKeywords.length}件のキーワードを収集`);
+
+      addLog("info", `Infotopから${infotopKeywords.length}件、競合から${competitorKeywords.length}件、悩みから${painKeywords.length}件のキーワードを収集`);
 
       // キーワードランキングAPI呼び出し
       const res = await fetch("/api/research/keywords/ranking", {
@@ -400,6 +564,7 @@ export default function ResearchPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sources: [
+            { source: "infotop", keywords: infotopKeywords },
             { source: "competitor", keywords: competitorKeywords },
             { source: "ai_generated", keywords: painKeywords },
           ],

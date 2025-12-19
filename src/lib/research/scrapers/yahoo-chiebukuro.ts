@@ -30,6 +30,19 @@ export interface ChiebukuroResult {
   severityKeywords: string[];
   category?: string;
   scrapedAt: string;
+  // AI深刻度分析（拡張）
+  aiSeverityAnalysis?: AISeverityAnalysis;
+}
+
+// AI深刻度分析の型
+export interface AISeverityAnalysis {
+  emotionalIntensity: number;      // 1-5: 感情的な強度
+  willingness2Pay: number;         // 1-5: お金を払う意思
+  problemDuration: "acute" | "chronic" | "unknown"; // 問題の期間
+  socialImpact: number;            // 1-5: 社会生活への影響
+  hiddenNeeds: string[];           // 隠れたニーズ
+  copywritingAngles: string[];     // コピーライティングの切り口
+  recommendedApproach: string;     // 推奨アプローチ
 }
 
 export type PainPointQuadrant =
@@ -570,6 +583,125 @@ ${markdown.slice(0, 8000)}
 }
 
 // ============================================================
+// AI深刻度分析
+// ============================================================
+
+/**
+ * 質問に対してAI深刻度分析を実行
+ */
+export async function analyzeQuestionSeverityWithAI(
+  question: ChiebukuroResult
+): Promise<AISeverityAnalysis> {
+  const prompt = `あなたは消費者心理分析のエキスパートです。
+以下のYahoo知恵袋の質問を分析し、コピーライティングに活用できる深刻度情報を抽出してください。
+
+## 質問
+タイトル: ${question.title}
+本文: ${question.content}
+${question.bestAnswer ? `ベストアンサー: ${question.bestAnswer}` : ""}
+閲覧数: ${question.views}
+回答数: ${question.answers}
+
+## 分析観点
+1. 感情的強度（1-5）: どれだけ感情的に追い詰められているか
+2. 支払い意思（1-5）: この問題を解決するためにお金を払う可能性
+3. 問題期間: 急性（今起きた）/ 慢性（長期間抱えている）/ 不明
+4. 社会的影響（1-5）: 仕事・人間関係への影響度
+5. 隠れたニーズ: 表面的な悩みの裏にある本当のニーズ
+6. コピーライティングの切り口: この悩みを持つ人に刺さるコピーのアプローチ
+7. 推奨アプローチ: この人にどう訴求すべきか
+
+## 出力形式（JSON）
+\`\`\`json
+{
+  "emotionalIntensity": 4,
+  "willingness2Pay": 3,
+  "problemDuration": "chronic",
+  "socialImpact": 4,
+  "hiddenNeeds": ["承認欲求", "自己肯定感の向上"],
+  "copywritingAngles": ["共感から入る", "具体的な解決ステップを提示"],
+  "recommendedApproach": "「私も同じ経験をしました」という共感から始め、具体的な解決策を提示"
+}
+\`\`\``;
+
+  try {
+    const response = await generateText(prompt, { model: "flash" });
+    const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
+
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[1]);
+      return {
+        emotionalIntensity: parsed.emotionalIntensity || 3,
+        willingness2Pay: parsed.willingness2Pay || 3,
+        problemDuration: parsed.problemDuration || "unknown",
+        socialImpact: parsed.socialImpact || 3,
+        hiddenNeeds: parsed.hiddenNeeds || [],
+        copywritingAngles: parsed.copywritingAngles || [],
+        recommendedApproach: parsed.recommendedApproach || "",
+      };
+    }
+  } catch (err) {
+    console.error("[chiebukuro] AI severity analysis error:", err);
+  }
+
+  // フォールバック
+  return {
+    emotionalIntensity: question.depthScore,
+    willingness2Pay: question.depthScore >= 4 ? 4 : 2,
+    problemDuration: "unknown",
+    socialImpact: 3,
+    hiddenNeeds: [],
+    copywritingAngles: [],
+    recommendedApproach: "一般的なアプローチ",
+  };
+}
+
+/**
+ * 複数の質問をバッチでAI分析
+ */
+export async function batchAnalyzeQuestionSeverity(
+  questions: ChiebukuroResult[],
+  options: { maxConcurrent?: number; onlyPriority?: boolean } = {}
+): Promise<ChiebukuroResult[]> {
+  const { maxConcurrent = 3, onlyPriority = false } = options;
+
+  // 優先度の高い質問のみ分析する場合
+  const targetQuestions = onlyPriority
+    ? questions.filter((q) => q.quadrant === "priority" || q.quadrant === "important")
+    : questions;
+
+  console.log(`[chiebukuro] Batch analyzing ${targetQuestions.length} questions with AI`);
+
+  const results: ChiebukuroResult[] = [];
+
+  // バッチ処理（並列数制限）
+  for (let i = 0; i < targetQuestions.length; i += maxConcurrent) {
+    const batch = targetQuestions.slice(i, i + maxConcurrent);
+
+    const batchResults = await Promise.all(
+      batch.map(async (q) => {
+        const analysis = await analyzeQuestionSeverityWithAI(q);
+        return { ...q, aiSeverityAnalysis: analysis };
+      })
+    );
+
+    results.push(...batchResults);
+
+    // レート制限対策
+    if (i + maxConcurrent < targetQuestions.length) {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+  }
+
+  // 分析されなかった質問を追加
+  const analyzedIds = new Set(results.map((r) => r.id));
+  const remainingQuestions = questions.filter((q) => !analyzedIds.has(q.id));
+  results.push(...remainingQuestions);
+
+  return results;
+}
+
+// ============================================================
 // インサイト生成
 // ============================================================
 
@@ -694,6 +826,9 @@ export const ChiebukuroResearch = {
   analyze: analyzeChiebukuro,
   scoreQuestion,
   determineQuadrant,
+  // AI深刻度分析
+  analyzeQuestionSeverity: analyzeQuestionSeverityWithAI,
+  batchAnalyzeSeverity: batchAnalyzeQuestionSeverity,
 };
 
 export default ChiebukuroResearch;
