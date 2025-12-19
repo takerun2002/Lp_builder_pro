@@ -16,6 +16,8 @@ export interface CopyDiagnosisInput {
   type?: "headline" | "body" | "cta" | "full_lp";
   target?: string;
   product?: string;
+  mode?: "quick" | "full";      // 診断モード
+  projectId?: string;           // RAG用のプロジェクトID
 }
 
 export interface DiagnosisScore {
@@ -36,6 +38,17 @@ export interface DiagnosisResult {
   weaknesses?: string[];
   rewriteSuggestions?: string[];
   error?: string;
+
+  // RAG拡張による追加フィールド
+  costSavings?: {
+    estimatedSavingsPercent: number;
+    explanation: string;
+  };
+  sources?: {
+    cached: string[];
+    retrieved: string[];
+  };
+  fallbackUsed?: boolean;  // JSONパース失敗時のフォールバック使用フラグ
 }
 
 // ============================================
@@ -88,24 +101,37 @@ export const DIAGNOSIS_CATEGORIES = [
 export async function diagnoseCopy(
   input: CopyDiagnosisInput
 ): Promise<DiagnosisResult> {
+  const { text, type = "full_lp", target, product, mode = "full", projectId } = input;
+
+  // quickモードは既存のまま維持（RAGに触れない）
+  if (mode === "quick") {
+    const quickResult = quickCheck(text);
+    return {
+      success: true,
+      summary: `${quickResult.passedCount}/6項目をクリア`,
+      overallScore: Math.round((quickResult.passedCount / 6) * 100),
+      grade: getGrade(Math.round((quickResult.passedCount / 6) * 100)),
+    };
+  }
+
   try {
     const typeLabel = {
       headline: "ヘッドライン",
       body: "本文",
       cta: "CTA（行動喚起）",
       full_lp: "LP全体",
-    }[input.type || "full_lp"];
+    }[type];
 
     const prompt = `あなたはLP（ランディングページ）のコピーライティング診断エキスパートです。
 ナレッジキャッシュに含まれる「キラーワード集」「セールスライティング技法」「心理トリガー」を参考に、以下のコピーを多角的に評価し、詳細なフィードバックを提供してください。
 
 ## 診断対象
 種別: ${typeLabel}
-${input.target ? `ターゲット: ${input.target}` : ""}
-${input.product ? `商品/サービス: ${input.product}` : ""}
+${target ? `ターゲット: ${target}` : ""}
+${product ? `商品/サービス: ${product}` : ""}
 
 ## コピー内容
-${input.text}
+${text}
 
 ## 評価カテゴリ（各100点満点）
 1. **明確さ (clarity)**: メッセージは明確で理解しやすいか
@@ -138,28 +164,45 @@ ${input.text}
 
 JSONのみを出力してください。`;
 
+    // RAG有効化条件
+    const hasProject = Boolean(projectId);
+
+    // maxDynamicTokens はタイプで調整
+    const maxTokensByType: Record<string, number> = {
+      headline: 1200,
+      cta: 1200,
+      body: 2400,
+      full_lp: 2400,
+    };
+
     // hybridGenerateを使用してナレッジキャッシュを活用
     const response = await hybridGenerate({
       prompt,
-      useCache: true,
+      projectId,
+      useCache: true,  // CAGは常時維持
+      // RAGはprojectIdがある場合のみ有効
+      dynamicSources: hasProject ? ["project_data"] : undefined,
+      includeN1: hasProject,           // N1 + hearing_response を取得
+      includeCompetitors: hasProject,  // competitor_lp + research_result を取得
+      maxDynamicTokens: maxTokensByType[type] || 1500,
     });
 
-    const text = response.text || "";
-    const result = JSON.parse(text) as {
-      scores: Array<{
-        category: string;
-        score: number;
-        feedback: string;
-        improvements: string[];
-      }>;
-      strengths: string[];
-      weaknesses: string[];
-      summary: string;
-      rewriteSuggestions: string[];
-    };
+    const responseText = response.text || "";
+
+    // JSONパース（フェイルセーフ付き）
+    const parsed = parseDiagnosisJson(responseText, text);
+
+    if (parsed.fallbackUsed) {
+      // フォールバック使用時はそのまま返す
+      return {
+        ...parsed,
+        costSavings: response.costSavings,
+        sources: response.sources,
+      };
+    }
 
     // スコアを整形
-    const scores: DiagnosisScore[] = result.scores.map((s) => ({
+    const scores: DiagnosisScore[] = (parsed.rawScores || []).map((s) => ({
       category: s.category,
       score: s.score,
       maxScore: 100,
@@ -183,16 +226,21 @@ JSONのみを出力してください。`;
       success: true,
       overallScore,
       grade,
-      summary: result.summary,
+      summary: parsed.summary,
       scores,
-      strengths: result.strengths,
-      weaknesses: result.weaknesses,
-      rewriteSuggestions: result.rewriteSuggestions,
+      strengths: parsed.strengths,
+      weaknesses: parsed.weaknesses,
+      rewriteSuggestions: parsed.rewriteSuggestions,
+      costSavings: response.costSavings,
+      sources: response.sources,
     };
   } catch (error) {
     console.error("[CopyDiagnosis] Error:", error);
+
+    // エラー時もフォールバックを返す（500ではなく）
+    const fallback = createFallbackResult(text);
     return {
-      success: false,
+      ...fallback,
       error: error instanceof Error ? error.message : "Diagnosis failed",
     };
   }
@@ -208,6 +256,97 @@ function getGrade(score: number): "S" | "A" | "B" | "C" | "D" {
   if (score >= 70) return "B";
   if (score >= 60) return "C";
   return "D";
+}
+
+// ============================================
+// JSONパース（フェイルセーフ付き）
+// ============================================
+
+interface ParsedDiagnosisJson {
+  success: boolean;
+  summary?: string;
+  rawScores?: Array<{
+    category: string;
+    score: number;
+    feedback: string;
+    improvements: string[];
+  }>;
+  strengths?: string[];
+  weaknesses?: string[];
+  rewriteSuggestions?: string[];
+  fallbackUsed?: boolean;
+  overallScore?: number;
+  grade?: "S" | "A" | "B" | "C" | "D";
+}
+
+function parseDiagnosisJson(text: string, originalText: string): ParsedDiagnosisJson {
+  let jsonStr = text;
+
+  // Step 1: マークダウンコードブロックを除去
+  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenceMatch) {
+    jsonStr = fenceMatch[1];
+  }
+
+  // Step 2: JSON.parse を試行
+  try {
+    const parsed = JSON.parse(jsonStr.trim());
+    return {
+      success: true,
+      summary: parsed.summary,
+      rawScores: parsed.scores,
+      strengths: parsed.strengths,
+      weaknesses: parsed.weaknesses,
+      rewriteSuggestions: parsed.rewriteSuggestions,
+    };
+  } catch (e) {
+    // Step 3: 最初のJSON塊を抽出して再parse
+    const jsonBlockMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (jsonBlockMatch) {
+      try {
+        const parsed = JSON.parse(jsonBlockMatch[0]);
+        return {
+          success: true,
+          summary: parsed.summary,
+          rawScores: parsed.scores,
+          strengths: parsed.strengths,
+          weaknesses: parsed.weaknesses,
+          rewriteSuggestions: parsed.rewriteSuggestions,
+        };
+      } catch (e2) {
+        console.warn("[CopyDiagnosis] JSON re-parse failed:", e2);
+      }
+    }
+
+    // Step 4: フォールバック
+    console.error("[CopyDiagnosis] JSON parse failed, using fallback. Error:", e);
+    return createFallbackResult(originalText);
+  }
+}
+
+function createFallbackResult(originalText: string): ParsedDiagnosisJson {
+  // quickCheckを使って簡易診断を生成
+  const quickResult = quickCheck(originalText);
+  const overallScore = Math.round((quickResult.passedCount / 6) * 100);
+
+  return {
+    success: true,
+    summary: "簡易診断にフォールバックしました。詳細診断は再試行してください。",
+    overallScore,
+    grade: getGrade(overallScore),
+    rawScores: DIAGNOSIS_CATEGORIES.map((cat) => ({
+      category: cat.id,
+      score: 50, // 中間値
+      feedback: "詳細診断が利用できないため、簡易診断結果を表示しています。",
+      improvements: quickResult.checks
+        .filter((c) => !c.passed)
+        .map((c) => c.tip),
+    })),
+    strengths: quickResult.checks.filter((c) => c.passed).map((c) => c.item),
+    weaknesses: quickResult.checks.filter((c) => !c.passed).map((c) => c.item),
+    rewriteSuggestions: [],
+    fallbackUsed: true,
+  };
 }
 
 /**

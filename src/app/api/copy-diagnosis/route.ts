@@ -13,8 +13,9 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { text, type, target, product, mode } = body as CopyDiagnosisInput & {
+    const { text, type, target, product, mode, projectId } = body as CopyDiagnosisInput & {
       mode?: "full" | "quick";
+      projectId?: string;
     };
 
     if (!text || text.trim().length === 0) {
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // クイックチェックモード
+    // クイックチェックモード（別途処理を残す - quickCheckの詳細結果を返す）
     if (mode === "quick") {
       const result = quickCheck(text);
       return NextResponse.json({
@@ -34,15 +35,18 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // フル診断モード
+    // フル診断モード（projectIdがある場合はRAGも有効化）
     const result = await diagnoseCopy({
       text,
       type,
       target,
       product,
+      mode,
+      projectId,  // RAG用のプロジェクトID
     });
 
-    if (!result.success) {
+    // fallbackUsedの場合も成功として返す（500エラーにしない）
+    if (!result.success && !result.fallbackUsed) {
       return NextResponse.json(
         { success: false, error: result.error },
         { status: 500 }

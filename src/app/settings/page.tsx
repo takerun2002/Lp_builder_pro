@@ -20,6 +20,7 @@ import {
   Search,
 } from "lucide-react";
 import { StorageQuickSettings } from "@/components/settings";
+import { RAGStatsCard } from "@/components/ai/RAGStatsCard";
 
 type ApiKeySource = "env" | "stored" | "none";
 
@@ -439,6 +440,9 @@ export default function SettingsPage() {
 
       {/* ===== ストレージ設定セクション（UX改善版） ===== */}
       <StorageQuickSettings />
+
+      {/* ===== RAG+CAG統計セクション ===== */}
+      <RAGStatsCard />
 
       <Card>
         <CardHeader>

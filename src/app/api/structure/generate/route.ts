@@ -1,11 +1,14 @@
 /**
- * AI構成自動生成 API
+ * AI構成自動生成 API（hybrid化版）
  *
- * Gemini 3 Flashを使用してLP構成を自動生成
+ * CAG（静的ナレッジキャッシュ）+ RAG（動的データ検索）を活用
+ * コスト削減: 30-50%（CAG部分は75%割引）
+ * 精度向上: プロジェクト固有のリサーチ/N1/競合データを反映
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
+import { hybridGenerate } from "@/lib/ai/hybrid-knowledge";
 import type { SectionPlan, GlobalDesignRules, SectionType, ContentElement } from "@/lib/structure/types";
 import { DEFAULT_GLOBAL_RULES, SECTION_TYPE_LABELS } from "@/lib/structure/types";
 
@@ -24,12 +27,32 @@ interface GenerateStructureRequest {
   includeTestimonials?: boolean;
   includeFaq?: boolean;
   includePrice?: boolean;
+
+  // Hybrid対応（追加）
+  projectId?: string;      // プロジェクトID（RAG用）
+  useHybrid?: boolean;     // ハイブリッドモード使用（default: true）
 }
 
 interface GenerateStructureResponse {
   sections: SectionPlan[];
   globalRules: GlobalDesignRules;
   suggestions: string[];
+
+  // Hybrid化による追加情報
+  costSavings?: {
+    estimatedSavingsPercent: number;
+    explanation: string;
+  };
+  sources?: {
+    cached: string[];
+    retrieved: string[];
+  };
+  timing?: {
+    cacheMs: number;
+    ragMs: number;
+    generationMs: number;
+    totalMs: number;
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -46,6 +69,8 @@ export async function POST(request: NextRequest) {
       includeTestimonials = true,
       includeFaq = true,
       includePrice = true,
+      projectId,
+      useHybrid = true,
     } = body;
 
     // プロンプト構築
@@ -61,7 +86,40 @@ export async function POST(request: NextRequest) {
       includePrice,
     });
 
-    // Gemini 3 Flash で生成
+    // ========== Hybrid化されたAPI呼び出し ==========
+    if (projectId && useHybrid) {
+      try {
+        const hybridResult = await hybridGenerate({
+          prompt,
+          projectId,
+          useCache: true,
+          dynamicSources: ["research_result", "project_data", "hearing_response"],
+          includeN1: true,
+          includeCompetitors: true,
+          maxDynamicTokens: 4000,
+        });
+
+        const parsed = parseStructureJSON(hybridResult.text);
+        const sections = convertSections(parsed.sections);
+        const globalRules = buildGlobalRules(parsed, tone);
+
+        const result: GenerateStructureResponse = {
+          sections,
+          globalRules,
+          suggestions: parsed.suggestions || [],
+          costSavings: hybridResult.costSavings,
+          sources: hybridResult.sources,
+          timing: hybridResult.timing,
+        };
+
+        return NextResponse.json(result);
+      } catch (hybridError) {
+        console.warn("[structure/generate] Hybrid generation failed, falling back:", hybridError);
+        // フォールバックへ
+      }
+    }
+
+    // ========== 従来のAPI呼び出し（フォールバック） ==========
     const response = await ai.models.generateContent({
       model: "gemini-2.0-flash",
       contents: prompt,
@@ -73,24 +131,10 @@ export async function POST(request: NextRequest) {
     const text = response.text || "";
 
     // JSONパース
-    let parsed: {
-      sections: Array<{
-        type: string;
-        name: string;
-        purpose: string;
-        elements: Array<{
-          type: string;
-          content: string;
-          style?: string;
-        }>;
-      }>;
-      colorScheme?: string;
-      mood?: string;
-      suggestions?: string[];
-    };
+    let parsed: ParsedStructure;
 
     try {
-      parsed = JSON.parse(text);
+      parsed = parseStructureJSON(text);
     } catch {
       // JSONパースに失敗した場合はデフォルト構成を返す
       return NextResponse.json({
@@ -101,31 +145,8 @@ export async function POST(request: NextRequest) {
     }
 
     // セクションを変換
-    const sections: SectionPlan[] = parsed.sections.map((s, index) => ({
-      id: `section-${Date.now()}-${index}`,
-      type: (s.type as SectionType) || "custom",
-      name: s.name || SECTION_TYPE_LABELS[s.type as SectionType] || "セクション",
-      order: index,
-      purpose: s.purpose || "",
-      elements: s.elements.map((e, eIndex) => ({
-        id: `element-${Date.now()}-${index}-${eIndex}`,
-        type: e.type as ContentElement["type"],
-        content: e.content,
-        style: e.style ? { emphasis: [e.style] } : undefined,
-      })),
-      estimatedHeight: "medium" as const,
-      isRequired: index === 0,
-    }));
-
-    // グローバルルール
-    const globalRules: GlobalDesignRules = {
-      ...DEFAULT_GLOBAL_RULES,
-      overallMood: parsed.mood || tone,
-      colorScheme: {
-        ...DEFAULT_GLOBAL_RULES.colorScheme,
-        type: mapColorScheme(parsed.colorScheme),
-      },
-    };
+    const sections = convertSections(parsed.sections);
+    const globalRules = buildGlobalRules(parsed, tone);
 
     const result: GenerateStructureResponse = {
       sections,
@@ -213,6 +234,84 @@ ${sectionTypes.map((t) => `- ${t}`).join("\n")}
 }
 
 type ColorScheme = "luxury" | "natural" | "corporate" | "warm" | "cool" | "vibrant" | "minimal";
+
+// ========== パース用型定義 ==========
+
+interface ParsedStructure {
+  sections: Array<{
+    type: string;
+    name: string;
+    purpose: string;
+    elements: Array<{
+      type: string;
+      content: string;
+      style?: string;
+    }>;
+  }>;
+  colorScheme?: string;
+  mood?: string;
+  suggestions?: string[];
+}
+
+/**
+ * JSONパース関数（マークダウンフェンス対応）
+ */
+function parseStructureJSON(text: string): ParsedStructure {
+  let jsonStr = text;
+
+  // マークダウンコードブロックを除去
+  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (jsonMatch) {
+    jsonStr = jsonMatch[1];
+  }
+
+  // 前後の空白を削除
+  jsonStr = jsonStr.trim();
+
+  try {
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    console.error("[structure/generate] JSON parse error:", e, "Text:", jsonStr.substring(0, 200));
+    throw new Error("構成データのパースに失敗しました");
+  }
+}
+
+/**
+ * パースされたセクションをSectionPlan[]に変換
+ */
+function convertSections(
+  parsedSections: ParsedStructure["sections"]
+): SectionPlan[] {
+  return parsedSections.map((s, index) => ({
+    id: `section-${Date.now()}-${index}`,
+    type: (s.type as SectionType) || "custom",
+    name: s.name || SECTION_TYPE_LABELS[s.type as SectionType] || "セクション",
+    order: index,
+    purpose: s.purpose || "",
+    elements: s.elements.map((e, eIndex) => ({
+      id: `element-${Date.now()}-${index}-${eIndex}`,
+      type: e.type as ContentElement["type"],
+      content: e.content,
+      style: e.style ? { emphasis: [e.style] } : undefined,
+    })),
+    estimatedHeight: "medium" as const,
+    isRequired: index === 0,
+  }));
+}
+
+/**
+ * パースされたデータからGlobalDesignRulesを構築
+ */
+function buildGlobalRules(parsed: ParsedStructure, tone: string): GlobalDesignRules {
+  return {
+    ...DEFAULT_GLOBAL_RULES,
+    overallMood: parsed.mood || tone,
+    colorScheme: {
+      ...DEFAULT_GLOBAL_RULES.colorScheme,
+      type: mapColorScheme(parsed.colorScheme),
+    },
+  };
+}
 
 function mapColorScheme(scheme?: string): ColorScheme {
   const validSchemes: ColorScheme[] = ["luxury", "natural", "corporate", "warm", "cool", "vibrant", "minimal"];
