@@ -35,7 +35,7 @@ interface ServerStatus {
 }
 
 const IMAGE_TYPES = [
-  { value: "", label: "すべて" },
+  { value: "all", label: "すべて" },
   { value: "高級・セレブ", label: "高級・セレブ" },
   { value: "シンプル", label: "シンプル" },
   { value: "にぎやか", label: "にぎやか" },
@@ -52,7 +52,7 @@ export default function DesignResearchPage() {
 
   // フィルター状態
   const [selectedSite, setSelectedSite] = useState(LP_ARCHIVE_SITES[0].id);
-  const [imageType, setImageType] = useState("");
+  const [imageType, setImageType] = useState("all");
   const [limit, setLimit] = useState("10");
 
   // サーバーステータスチェック
@@ -92,7 +92,7 @@ export default function DesignResearchPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           url: site.url,
-          imageType: imageType || undefined,
+          imageType: imageType === "all" ? undefined : imageType,
           limit: parseInt(limit, 10),
           useLLM: true,
         }),
