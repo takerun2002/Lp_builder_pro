@@ -27,22 +27,43 @@ export async function POST(request: NextRequest) {
     const results: {
       discovered?: Awaited<ReturnType<typeof searchCompetitorLPs>>;
       analyzed?: Awaited<ReturnType<typeof extractConceptsBulk>>;
-    } = {};
+      warnings?: string[];
+    } = {
+      warnings: [],
+    };
 
     // 競合発見
     if (mode === "discover" || mode === "both") {
+      console.log("[competitors] Starting discovery...");
+
       const searchResults = await searchCompetitorLPs(context, {
         region: "japan",
         limit: 10,
         scrapeResults: true,
         filterLP: true,
       });
+
       results.discovered = searchResults;
+      console.log(`[competitors] Discovered ${searchResults.organic.length} results`);
+
+      // LP候補がない場合の警告
+      if (searchResults.organic.length === 0) {
+        results.warnings?.push("競合LPが見つかりませんでした。検索キーワードを変更してみてください。");
+      }
+
+      const lpCandidates = searchResults.organic.filter((r) => r.isLP);
+      console.log(`[competitors] LP candidates: ${lpCandidates.length}`);
+
+      if (lpCandidates.length === 0 && searchResults.organic.length > 0) {
+        results.warnings?.push("LP候補のフィルタリングで結果が0件になりました。全結果を分析対象とします。");
+        // フィルタリングを緩和
+        searchResults.organic.forEach((r) => (r.isLP = true));
+      }
     }
 
     // 競合分析
     if (mode === "analyze" || mode === "both") {
-      let competitorsToAnalyze: Array<{ url: string; markdown: string }> = [];
+      const competitorsToAnalyze: Array<{ url: string; markdown: string }> = [];
 
       if (urls && urls.length > 0) {
         // 指定されたURLを分析
@@ -51,7 +72,7 @@ export async function POST(request: NextRequest) {
             const scraped = await scrapeUrl(url, {
               formats: ["markdown"],
               onlyMainContent: false,
-              waitFor: 2000,
+              waitFor: 3000,
             });
             if (scraped.markdown) {
               competitorsToAnalyze.push({
@@ -61,18 +82,41 @@ export async function POST(request: NextRequest) {
             }
           } catch (error) {
             console.error(`[competitors] Failed to scrape ${url}:`, error);
+            results.warnings?.push(`${url} のスクレイピングに失敗しました`);
           }
         }
       } else if (results.discovered?.organic) {
-        // 発見した競合を分析
-        competitorsToAnalyze = results.discovered.organic
-          .filter((r) => r.markdown && r.isLP)
-          .slice(0, 5)
-          .map((r) => ({
-            url: r.url,
-            markdown: r.markdown!,
-          }));
+        // 発見した競合を分析（markdownがなくてもisLPならスクレイピング試行）
+        const candidates = results.discovered.organic.filter((r) => r.isLP).slice(0, 5);
+
+        for (const candidate of candidates) {
+          if (candidate.markdown) {
+            competitorsToAnalyze.push({
+              url: candidate.url,
+              markdown: candidate.markdown,
+            });
+          } else {
+            // markdownがない場合は再スクレイピング
+            try {
+              const scraped = await scrapeUrl(candidate.url, {
+                formats: ["markdown"],
+                onlyMainContent: false,
+                waitFor: 3000,
+              });
+              if (scraped.markdown) {
+                competitorsToAnalyze.push({
+                  url: candidate.url,
+                  markdown: scraped.markdown,
+                });
+              }
+            } catch (error) {
+              console.error(`[competitors] Re-scrape failed for ${candidate.url}:`, error);
+            }
+          }
+        }
       }
+
+      console.log(`[competitors] Analyzing ${competitorsToAnalyze.length} competitors`);
 
       if (competitorsToAnalyze.length > 0) {
         const analysisResults = await extractConceptsBulk(
@@ -83,6 +127,8 @@ export async function POST(request: NextRequest) {
           }
         );
         results.analyzed = analysisResults;
+      } else {
+        results.warnings?.push("分析対象の競合LPがありませんでした。");
       }
     }
 
@@ -95,6 +141,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : "競合分析に失敗しました",
+        details: error instanceof Error ? error.stack : undefined,
       },
       { status: 500 }
     );

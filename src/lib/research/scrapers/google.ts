@@ -63,6 +63,21 @@ const LP_URL_PATTERNS = [
   /\.lp\./i,
 ];
 
+// 緩いURLパターン（スコア加点用）
+const LP_URL_PATTERNS_LOOSE = [
+  /\/lp/i,
+  /\/landing/i,
+  /\/promo/i,
+  /\/offer/i,
+  /infotop/i,
+  /note\.com/i,        // コンテンツ販売
+  /brain-market/i,    // Brain
+  /coconala/i,        // ココナラ
+  /peraichi/i,        // ペライチ
+  /wix/i,
+  /jimdo/i,
+];
+
 const LP_TITLE_PATTERNS = [
   /【.*?】/,
   /期間限定/,
@@ -74,6 +89,13 @@ const LP_TITLE_PATTERNS = [
   /〇〇式/,
   /〇〇法/,
   /〇〇メソッド/,
+];
+
+// コンテンツキーワード（スコア加点用）
+const LP_CONTENT_KEYWORDS = [
+  "今すぐ", "申込", "購入", "限定", "特別", "無料",
+  "実績", "お客様の声", "よくある質問", "保証",
+  "特典", "ボーナス", "値段", "価格", "返金",
 ];
 
 // ============================================================
@@ -145,6 +167,8 @@ export async function searchGoogle(
   const region = options?.region || "japan";
   const limit = options?.limit || 10;
 
+  console.log(`[google] Searching: "${query}" (region: ${region}, limit: ${limit})`);
+
   try {
     // Firecrawlの検索APIを使用
     const results = await searchAndScrape(query, {
@@ -152,15 +176,29 @@ export async function searchGoogle(
       region,
     });
 
-    const organic: OrganicResult[] = results.map((r, i) => ({
-      url: extractUrl(r.metadata) || "",
-      title: r.metadata?.title || "",
-      snippet: r.metadata?.description || "",
-      position: i + 1,
-      domain: extractDomain(r.metadata?.title || ""),
-      isLP: isLikelyLP(r.metadata?.title || "", extractUrl(r.metadata) || ""),
-      markdown: r.markdown,
-    })).filter((r) => r.url);
+    console.log(`[google] Firecrawl returned ${results.length} results`);
+
+    if (results.length === 0) {
+      console.warn("[google] No results from Firecrawl, using Crawl4AI fallback");
+      return await searchGoogleWithCrawl4AI(query, options);
+    }
+
+    const organic: OrganicResult[] = results.map((r, i) => {
+      const url = extractUrl(r.metadata);
+      const title = (r.metadata?.title as string) || "";
+
+      console.log(`[google] Result ${i + 1}: ${title.slice(0, 50)} - ${url}`);
+
+      return {
+        url,
+        title,
+        snippet: (r.metadata?.description as string) || "",
+        position: i + 1,
+        domain: extractDomain(url),
+        isLP: isLikelyLP(title, url),
+        markdown: r.markdown,
+      };
+    }).filter((r) => r.url);
 
     // 広告は別途検出（HTMLパースが必要）
     const ads: AdResult[] = [];
@@ -171,8 +209,95 @@ export async function searchGoogle(
     return { organic, ads, relatedSearches };
   } catch (error) {
     console.error("[google] Search error:", error);
-    return { organic: [], ads: [], relatedSearches: [] };
+
+    // フォールバック: Crawl4AI
+    try {
+      return await searchGoogleWithCrawl4AI(query, options);
+    } catch (fallbackError) {
+      console.error("[google] Crawl4AI fallback also failed:", fallbackError);
+      return { organic: [], ads: [], relatedSearches: [] };
+    }
   }
+}
+
+/**
+ * Crawl4AIを使ったGoogle検索フォールバック
+ */
+async function searchGoogleWithCrawl4AI(
+  query: string,
+  options?: { region?: string; limit?: number }
+): Promise<GoogleSearchResult> {
+  const limit = options?.limit || 10;
+
+  console.log("[google] Trying Crawl4AI fallback...");
+
+  try {
+    const CRAWL4AI_SERVER_URL = process.env.CRAWL4AI_SERVER_URL || "http://localhost:8765";
+
+    // Google検索結果ページをスクレイプ
+    const googleUrl = `https://www.google.co.jp/search?q=${encodeURIComponent(query)}&num=${limit}`;
+
+    const response = await fetch(`${CRAWL4AI_SERVER_URL}/scrape`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        url: googleUrl,
+        use_llm: true,
+        extraction_instruction: `このGoogle検索結果から、以下の情報をJSON配列で抽出してください：
+- url: リンク先URL
+- title: ページタイトル
+- snippet: 説明文
+
+広告は除外し、オーガニック検索結果のみを抽出してください。
+JSONのみを出力してください。`,
+      }),
+    });
+
+    if (!response.ok) {
+      console.warn(`[google] Crawl4AI server returned ${response.status}`);
+      return { organic: [], ads: [], relatedSearches: [] };
+    }
+
+    const result = await response.json();
+
+    if (result.extracted_content) {
+      try {
+        // JSON配列をパース
+        let jsonStr = result.extracted_content;
+        const jsonMatch = jsonStr.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+          jsonStr = jsonMatch[0];
+        }
+
+        const parsed = JSON.parse(jsonStr) as Array<{
+          url: string;
+          title: string;
+          snippet: string;
+        }>;
+
+        console.log(`[google] Crawl4AI extracted ${parsed.length} results`);
+
+        return {
+          organic: parsed.map((r, i) => ({
+            url: r.url,
+            title: r.title,
+            snippet: r.snippet,
+            position: i + 1,
+            domain: extractDomain(r.url),
+            isLP: isLikelyLP(r.title, r.url),
+          })),
+          ads: [],
+          relatedSearches: [],
+        };
+      } catch (parseError) {
+        console.error("[google] Crawl4AI JSON parse error:", parseError);
+      }
+    }
+  } catch (error) {
+    console.error("[google] Crawl4AI fallback error:", error);
+  }
+
+  return { organic: [], ads: [], relatedSearches: [] };
 }
 
 /**
@@ -259,23 +384,29 @@ function buildSearchQueries(context: ResearchContext): string[] {
 
 function filterLPCandidates(results: OrganicResult[]): OrganicResult[] {
   return results.filter((r) => {
-    // URL パターンでLP判定
-    if (LP_URL_PATTERNS.some((pattern) => pattern.test(r.url))) {
-      return true;
+    // スコアベースの判定に変更
+    let score = 0;
+
+    // URL パターン（厳密）: +3点
+    if (LP_URL_PATTERNS.some((p) => p.test(r.url))) score += 3;
+
+    // URL パターン（緩い）: +2点
+    if (LP_URL_PATTERNS_LOOSE.some((p) => p.test(r.url))) score += 2;
+
+    // タイトルパターン: +2点
+    if (LP_TITLE_PATTERNS.some((p) => p.test(r.title))) score += 2;
+
+    // コンテンツキーワード: +1点/キーワード
+    const content = `${r.title} ${r.snippet}`;
+    for (const kw of LP_CONTENT_KEYWORDS) {
+      if (content.includes(kw)) score += 1;
     }
 
-    // タイトルパターンでLP判定
-    if (LP_TITLE_PATTERNS.some((pattern) => pattern.test(r.title))) {
-      return true;
-    }
+    // 明示的LP判定: +3点
+    if (r.isLP) score += 3;
 
-    // スニペットにセールス系キーワードがある
-    const salesKeywords = ["今すぐ", "申込", "購入", "限定", "特別", "無料"];
-    if (salesKeywords.some((kw) => r.snippet.includes(kw))) {
-      return true;
-    }
-
-    return r.isLP === true;
+    // 2点以上でLP候補として採用
+    return score >= 2;
   });
 }
 
@@ -333,7 +464,17 @@ async function scrapeSearchResults(
 
 function extractUrl(metadata: Record<string, unknown> | undefined): string {
   if (!metadata) return "";
-  return (metadata.sourceURL as string) || (metadata.url as string) || "";
+
+  // Firecrawlの様々なレスポンス形式に対応
+  const urlFields = ["sourceURL", "url", "ogUrl", "canonicalUrl", "link"];
+  for (const field of urlFields) {
+    const value = metadata[field];
+    if (typeof value === "string" && value.startsWith("http")) {
+      return value;
+    }
+  }
+
+  return "";
 }
 
 function extractDomain(url: string): string {

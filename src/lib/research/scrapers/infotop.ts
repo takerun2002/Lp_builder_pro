@@ -49,49 +49,78 @@ export async function scrapeInfotopRanking(
   const limit = options?.limit || 10;
   const genreId = options?.genre ? GENRE_IDS[options.genre] || "" : "";
 
-  console.log("[infotop] Scraping ranking...", { genre: options?.genre, limit, useAI: options?.useAI });
+  console.log("[infotop] Scraping ranking...", { genre: options?.genre, limit });
 
   try {
-    // ランキングページをスクレイプ
     const url = genreId
       ? `${INFOTOP_RANKING_URL}?genre=${genreId}`
       : INFOTOP_RANKING_URL;
 
-    const result = await scrapeUrl(url, {
-      formats: ["markdown"],
-      onlyMainContent: true,
-      waitFor: 2000,
-    });
-
-    if (!result.success || !result.markdown) {
-      console.warn("[infotop] Failed to scrape ranking page");
-      return getSimulatedRanking(options?.genre || "other", limit);
+    // 方法1: Firecrawl
+    let markdown = "";
+    try {
+      const result = await scrapeUrl(url, {
+        formats: ["markdown"],
+        onlyMainContent: false, // 全体を取得（重要）
+        waitFor: 3000,
+      });
+      markdown = result.markdown || "";
+      console.log(`[infotop] Firecrawl scraped ${markdown.length} chars`);
+    } catch (firecrawlError) {
+      console.warn("[infotop] Firecrawl failed:", firecrawlError);
     }
 
-    // AI分析を使用する場合
-    if (options?.useAI) {
-      const aiResult = await analyzeInfotopProductWithAI(result.markdown, options.genre);
-
-      if (aiResult.products.length > 0) {
-        return aiResult.products.slice(0, limit).map((p, i) => ({
-          rank: p.rank || i + 1,
-          productName: p.name,
-          genre: options.genre || "",
-          price: p.price,
-          lpUrl: "",
-        }));
+    // 方法2: Crawl4AI（フォールバック）
+    if (!markdown) {
+      try {
+        const CRAWL4AI_SERVER_URL = process.env.CRAWL4AI_SERVER_URL || "http://localhost:8765";
+        const response = await fetch(`${CRAWL4AI_SERVER_URL}/scrape`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url,
+            wait_for_selector: ".ranking-list",
+            timeout: 10000,
+          }),
+        });
+        if (response.ok) {
+          const crawl4aiResult = await response.json();
+          markdown = crawl4aiResult.markdown || "";
+          console.log(`[infotop] Crawl4AI scraped ${markdown.length} chars`);
+        }
+      } catch (crawl4aiError) {
+        console.warn("[infotop] Crawl4AI failed:", crawl4aiError);
       }
     }
 
-    // 従来のパース（フォールバック）
-    const products = parseRankingMarkdown(result.markdown, limit);
-
-    if (products.length === 0) {
-      console.warn("[infotop] No products found, using simulated data");
+    if (!markdown) {
+      console.warn("[infotop] All scraping methods failed");
       return getSimulatedRanking(options?.genre || "other", limit);
     }
 
-    return products;
+    // AI分析でパース（常に使用）
+    const aiResult = await analyzeInfotopProductWithAI(markdown, options?.genre);
+
+    if (aiResult.products.length > 0) {
+      console.log(`[infotop] AI extracted ${aiResult.products.length} products`);
+      return aiResult.products.slice(0, limit).map((p, i) => ({
+        rank: p.rank || i + 1,
+        productName: p.name,
+        genre: options?.genre || "",
+        price: p.price,
+        lpUrl: "", // AI分析ではURLは取得できない
+      }));
+    }
+
+    // 最終フォールバック（レガシーパース）
+    console.log("[infotop] AI analysis returned no products, trying legacy parse");
+    const legacyProducts = parseRankingMarkdown(markdown, limit);
+
+    if (legacyProducts.length > 0) {
+      return legacyProducts;
+    }
+
+    return getSimulatedRanking(options?.genre || "other", limit);
   } catch (err) {
     console.error("[infotop] Error:", err);
     return getSimulatedRanking(options?.genre || "other", limit);
@@ -114,19 +143,50 @@ export async function scrapeInfotopRankingWithAnalysis(
       ? `${INFOTOP_RANKING_URL}?genre=${genreId}`
       : INFOTOP_RANKING_URL;
 
-    const result = await scrapeUrl(url, {
-      formats: ["markdown"],
-      onlyMainContent: true,
-      waitFor: 2000,
-    });
+    // 方法1: Firecrawl
+    let markdown = "";
+    try {
+      const result = await scrapeUrl(url, {
+        formats: ["markdown"],
+        onlyMainContent: false, // 全体を取得（重要）
+        waitFor: 3000,
+      });
+      markdown = result.markdown || "";
+      console.log(`[infotop-analysis] Firecrawl scraped ${markdown.length} chars`);
+    } catch (firecrawlError) {
+      console.warn("[infotop-analysis] Firecrawl failed:", firecrawlError);
+    }
 
-    if (!result.success || !result.markdown) {
-      const products = getSimulatedRanking(options?.genre || "other", limit);
-      return { products };
+    // 方法2: Crawl4AI（フォールバック）
+    if (!markdown) {
+      try {
+        const CRAWL4AI_SERVER_URL = process.env.CRAWL4AI_SERVER_URL || "http://localhost:8765";
+        const response = await fetch(`${CRAWL4AI_SERVER_URL}/scrape`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url,
+            wait_for_selector: ".ranking-list",
+            timeout: 10000,
+          }),
+        });
+        if (response.ok) {
+          const crawl4aiResult = await response.json();
+          markdown = crawl4aiResult.markdown || "";
+          console.log(`[infotop-analysis] Crawl4AI scraped ${markdown.length} chars`);
+        }
+      } catch (crawl4aiError) {
+        console.warn("[infotop-analysis] Crawl4AI failed:", crawl4aiError);
+      }
+    }
+
+    if (!markdown) {
+      console.warn("[infotop-analysis] All scraping methods failed");
+      return { products: getSimulatedRanking(options?.genre || "other", limit) };
     }
 
     // AI分析を実行
-    const aiResult = await analyzeInfotopProductWithAI(result.markdown, options?.genre);
+    const aiResult = await analyzeInfotopProductWithAI(markdown, options?.genre);
 
     if (aiResult.products.length > 0) {
       return {
@@ -135,7 +195,7 @@ export async function scrapeInfotopRankingWithAnalysis(
           productName: p.name,
           genre: options?.genre || "",
           price: p.price,
-          lpUrl: "",
+          lpUrl: "", // AI分析ではURLは取得できない
         })),
         priceInsights: aiResult.priceInsights,
         conceptPatterns: aiResult.conceptPatterns,
@@ -143,12 +203,12 @@ export async function scrapeInfotopRankingWithAnalysis(
     }
 
     // フォールバック
-    const products = parseRankingMarkdown(result.markdown, limit);
+    const products = parseRankingMarkdown(markdown, limit);
     return {
       products: products.length > 0 ? products : getSimulatedRanking(options?.genre || "other", limit),
     };
   } catch (err) {
-    console.error("[infotop] Error:", err);
+    console.error("[infotop-analysis] Error:", err);
     return { products: getSimulatedRanking(options?.genre || "other", limit) };
   }
 }

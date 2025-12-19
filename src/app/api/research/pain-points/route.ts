@@ -18,11 +18,16 @@ export async function POST(request: NextRequest) {
       };
     };
 
+    // 空配列の場合はエラーではなく空結果を返す
     if (!painPoints || painPoints.length === 0) {
-      return NextResponse.json(
-        { error: "悩みテキストが必要です" },
-        { status: 400 }
-      );
+      console.warn("[pain-points] No pain points provided");
+      return NextResponse.json({
+        success: true,
+        classified: [],
+        quadrantSummary: null,
+        insights: [],
+        warning: "悩みデータがありませんでした。前の工程（競合LP分析）で悩みが抽出されなかった可能性があります。",
+      });
     }
 
     // 重複を除去
@@ -47,7 +52,10 @@ export async function POST(request: NextRequest) {
     console.error("[pain-points] API Error:", error);
     return NextResponse.json(
       {
+        success: false,
         error: error instanceof Error ? error.message : "悩み分類に失敗しました",
+        classified: [],
+        insights: [],
       },
       { status: 500 }
     );
