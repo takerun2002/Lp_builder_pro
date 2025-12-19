@@ -1,0 +1,61 @@
+id: benefit_standard
+name: "ベネフィット - スタンダード"
+category: benefit
+format: yaml
+
+globalRulesTemplate: |
+  #ルール
+  以下を画像にそのまま描画する
+  サイズは{{aspectRatio}}
+  {{sectionName}}セクション（メリット・ベネフィット）
+  背景は{{backgroundStyle}}
+  得られる未来をビジュアル化
+
+elementTemplates:
+  sectionTitle:
+    template: |
+      | セクションタイトル：
+      {{content}}
+      「あなたが得られる3つのメリット」的な表現
+  benefitCard:
+    template: |
+      | ベネフィットカード：
+      番号: {{number}}
+      タイトル: {{title}}
+      説明: {{description}}
+      アイコン: {{icon}}
+  beforeAfter:
+    template: |
+      | ビフォーアフター：
+      Before: {{before}}
+      After: {{after}}
+      矢印でつなぐ
+  futureImage:
+    template: |
+      | 未来のイメージ：
+      {{content}}
+      理想の状態を視覚的に表現
+
+styleModifiers:
+  aspirational:
+    - 理想の未来を表現
+    - 輝く表情
+    - 成功イメージ
+  practical:
+    - 具体的な数値
+    - グラフやチャート
+    - 実用的な印象
+  emotional:
+    - 感情に訴える
+    - 幸せな家族や笑顔
+    - 心温まるビジュアル
+
+customizableFields:
+  - content
+  - number
+  - title
+  - description
+  - icon
+  - before
+  - after
+  - backgroundStyle

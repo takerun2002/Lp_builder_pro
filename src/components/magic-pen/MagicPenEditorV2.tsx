@@ -12,8 +12,10 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RegionChatBox } from "./RegionChatBox";
 import { RegionList } from "./RegionList";
+import { ReferenceLPSelector } from "@/components/workspace/ReferenceLPSelector";
 import {
   type MaskRegion,
   generateRegionId,
@@ -28,6 +30,14 @@ import { Undo2, Redo2, Eraser, Brush, ZoomIn, ZoomOut, RotateCcw } from "lucide-
 interface RefImage {
   mimeType: string;
   base64: string;
+}
+
+interface SwipeFile {
+  id: string;
+  name: string;
+  file_path: string;
+  category?: string;
+  tone_manner?: string;
 }
 
 export interface MagicPenEditorV2Props {
@@ -89,6 +99,10 @@ export function MagicPenEditorV2({
   // Saving state
   const [saving, setSaving] = useState(false);
 
+  // Reference LP state
+  const [swipeFiles, setSwipeFiles] = useState<SwipeFile[]>([]);
+  const [selectedReferenceLP, setSelectedReferenceLP] = useState<string | null>(null);
+
   // === Load image ===
   const loadImage = useCallback((dataUrl: string) => {
     setImageDataUrl(dataUrl);
@@ -122,6 +136,23 @@ export function MagicPenEditorV2({
   useEffect(() => {
     loadImage(initialImageDataUrl);
   }, [initialImageDataUrl, loadImage]);
+
+  // Fetch swipe files for reference LP selection
+  useEffect(() => {
+    const fetchSwipeFiles = async () => {
+      try {
+        // Try project-specific endpoint first, fall back to global
+        const res = await fetch("/api/swipe-files");
+        if (res.ok) {
+          const data = await res.json();
+          setSwipeFiles(data.swipeFiles || data || []);
+        }
+      } catch {
+        // Silently fail - swipe files are optional
+      }
+    };
+    fetchSwipeFiles();
+  }, []);
 
   // === Update container offset for chat box positioning ===
   useEffect(() => {
@@ -468,6 +499,7 @@ export function MagicPenEditorV2({
             imageDataUrl,
             maskDataUrl: region.maskDataUrl,
             refImages: refImages.map((r) => ({ mimeType: r.mimeType, base64: r.base64 })),
+            refSwipeIds: selectedReferenceLP ? [selectedReferenceLP] : [],
           }),
         });
 
@@ -497,7 +529,7 @@ export function MagicPenEditorV2({
         );
       }
     },
-    [regions, imageDataUrl, refImages]
+    [regions, imageDataUrl, refImages, selectedReferenceLP]
   );
 
   const applyRegionResult = useCallback(
@@ -804,16 +836,39 @@ export function MagicPenEditorV2({
         </div>
 
         {/* Right Panel */}
-        <div className="w-80 border-l bg-card shrink-0">
-          <RegionList
-            regions={regions}
-            activeRegionId={activeRegionId}
-            onSelectRegion={setActiveRegionId}
-            onDeleteRegion={deleteRegion}
-            onGenerateAll={generateAllRegions}
-            onApplyAll={applyAllResults}
-            onClearAll={clearAllRegions}
-          />
+        <div className="w-80 border-l bg-card shrink-0 flex flex-col">
+          {/* Reference LP Selector */}
+          {swipeFiles.length > 0 && (
+            <Card className="m-4 mb-0">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">参考LP</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <ReferenceLPSelector
+                  swipeFiles={swipeFiles}
+                  selectedId={selectedReferenceLP}
+                  onSelect={setSelectedReferenceLP}
+                  compact
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  選択すると、このLPのトンマナに合わせて編集されます
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Region List */}
+          <div className="flex-1 overflow-hidden">
+            <RegionList
+              regions={regions}
+              activeRegionId={activeRegionId}
+              onSelectRegion={setActiveRegionId}
+              onDeleteRegion={deleteRegion}
+              onGenerateAll={generateAllRegions}
+              onApplyAll={applyAllResults}
+              onClearAll={clearAllRegions}
+            />
+          </div>
         </div>
       </div>
     </div>

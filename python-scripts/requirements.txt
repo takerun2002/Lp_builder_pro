@@ -1,0 +1,6 @@
+# Crawl4AI スクレイピングサーバー依存関係
+crawl4ai>=0.4.0
+fastapi>=0.109.0
+uvicorn>=0.27.0
+pydantic>=2.0.0
+google-generativeai>=0.3.0

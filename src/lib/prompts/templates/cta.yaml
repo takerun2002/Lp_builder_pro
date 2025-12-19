@@ -1,0 +1,68 @@
+id: cta_standard
+name: "CTA - スタンダード"
+category: cta
+format: yaml
+
+globalRulesTemplate: |
+  #ルール
+  以下を画像にそのまま描画する
+  サイズは{{aspectRatio}}
+  {{sectionName}}セクション（行動喚起・CTA）
+  背景は{{backgroundStyle}}
+  今すぐ行動したくなるデザイン
+
+elementTemplates:
+  headline:
+    template: |
+      | CTAヘッドライン：
+      {{content}}
+      緊急性や限定感を表現
+  offerBox:
+    template: |
+      | オファーボックス：
+      価格: {{price}}円
+      定価: {{originalPrice}}円（{{discount}}%OFF）
+      特典: {{bonuses}}
+      枠で囲む、目立つデザイン
+  ctaButton:
+    template: |
+      | CTAボタン：
+      テキスト: {{buttonText}}
+      色: {{buttonColor}}
+      サイズ: 大きく目立つ
+      アニメーション示唆: {{animation}}
+  urgency:
+    template: |
+      | 緊急性要素：
+      {{content}}
+      カウントダウン、残数表示など
+  guarantee:
+    template: |
+      | 保証バッジ：
+      {{content}}
+      返金保証、安心マーク
+
+styleModifiers:
+  urgent:
+    - 赤やオレンジの強調色
+    - カウントダウン風
+    - 「今すぐ」感を演出
+  premium:
+    - 高級感のあるデザイン
+    - ゴールドアクセント
+    - VIP感の演出
+  safe:
+    - 安心感を重視
+    - 保証マーク強調
+    - 信頼できる印象
+
+customizableFields:
+  - content
+  - price
+  - originalPrice
+  - discount
+  - bonuses
+  - buttonText
+  - buttonColor
+  - animation
+  - backgroundStyle

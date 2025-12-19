@@ -10,6 +10,7 @@ import {
   Wand2,
   Camera,
   Microscope,
+  Palette,
   Settings,
   BookOpen,
   ChevronLeft,
@@ -38,6 +39,7 @@ const TOOL_ITEMS: NavItem[] = [
   { href: "/dev/magic-pen", label: "画像編集", icon: Wand2, description: "AIで画像を編集" },
   { href: "/dev/lp-ocr", label: "LP取り込み", icon: Camera, description: "LPスクショ→テキスト抽出" },
   { href: "/dev/research", label: "リサーチ", icon: Microscope, description: "AIで市場調査" },
+  { href: "/dev/design-research", label: "デザイン収集", icon: Palette, description: "LPデザイン参考を収集" },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [

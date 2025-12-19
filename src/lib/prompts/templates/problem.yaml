@@ -1,0 +1,56 @@
+id: problem_standard
+name: "悩み・課題 - スタンダード"
+category: problem
+format: yaml
+
+globalRulesTemplate: |
+  #ルール
+  以下を画像にそのまま描画する
+  サイズは{{aspectRatio}}
+  {{sectionName}}セクション（悩み・課題提起）
+  背景は{{backgroundStyle}}
+  読者の共感を得るデザイン
+
+elementTemplates:
+  sectionTitle:
+    template: |
+      | セクションタイトル：
+      {{content}}
+      強調デザイン、フォント: {{fontSize}}px
+  painPoint:
+    template: |
+      | 悩みポイント：
+      {{content}}
+      アイコン: {{icon}}
+      レイアウト: {{layout}}
+  illustration:
+    template: |
+      | イラスト/画像：
+      {{content}}
+      悩んでいる表情、感情を表現
+  empathyText:
+    template: |
+      | 共感テキスト：
+      {{content}}
+      読者に寄り添う表現
+
+styleModifiers:
+  dramatic:
+    - ダークな背景
+    - 赤やオレンジのアクセント
+    - 感情に訴えかけるビジュアル
+  gentle:
+    - 柔らかい色調
+    - やさしいイラスト
+    - 寄り添う雰囲気
+  realistic:
+    - 実際の写真ベース
+    - リアルな表現
+    - 具体的なシチュエーション
+
+customizableFields:
+  - content
+  - icon
+  - layout
+  - fontSize
+  - backgroundStyle

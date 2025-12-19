@@ -1,0 +1,55 @@
+id: solution_standard
+name: "解決策 - スタンダード"
+category: solution
+format: yaml
+
+globalRulesTemplate: |
+  #ルール
+  以下を画像にそのまま描画する
+  サイズは{{aspectRatio}}
+  {{sectionName}}セクション（解決策の提示）
+  背景は{{backgroundStyle}}
+  希望を感じさせるデザイン
+
+elementTemplates:
+  sectionTitle:
+    template: |
+      | セクションタイトル：
+      {{content}}
+      期待感を持たせるデザイン
+  productImage:
+    template: |
+      | 商品/サービス画像：
+      {{content}}
+      魅力的に見える角度、ライティング
+  featureList:
+    template: |
+      | 特徴リスト：
+      {{#each features}}
+      - {{this}}
+      {{/each}}
+      チェックマークアイコン付き
+  transitionText:
+    template: |
+      | 転換テキスト：
+      {{content}}
+      「でも、そんなあなたに朗報です」的な表現
+
+styleModifiers:
+  bright:
+    - 明るく希望に満ちた色使い
+    - 光のエフェクト
+    - ポジティブな印象
+  trustworthy:
+    - 落ち着いた色調
+    - 信頼感のあるデザイン
+    - プロフェッショナルな印象
+  innovative:
+    - 先進的なデザイン
+    - テクノロジー感
+    - モダンな表現
+
+customizableFields:
+  - content
+  - features
+  - backgroundStyle

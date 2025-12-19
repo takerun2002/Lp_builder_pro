@@ -1,0 +1,65 @@
+id: firstview_standard
+name: "ファーストビュー - スタンダード"
+category: firstview
+format: yaml
+
+globalRulesTemplate: |
+  #ルール
+  以下を画像にそのまま描画する
+  サイズは{{aspectRatio}}
+  {{sectionName}}セクション
+  背景には{{backgroundStyle}}
+  全体のトーンは{{tone}}
+
+elementTemplates:
+  headline:
+    template: |
+      | タイトル（メインキャッチ）：
+      {{content}}
+      フォント: {{fontSize}}px、{{fontWeight}}、{{fontColor}}
+  subheadline:
+    template: |
+      | サブタイトル：
+      {{content}}
+      フォント: {{fontSize}}px
+  logo:
+    template: |
+      | ロゴ：
+      {{content}}
+      配置: {{position}}
+  heroImage:
+    template: |
+      | メイン画像：
+      {{content}}
+      サイズ: {{width}} x {{height}}
+  cta:
+    template: |
+      | CTAボタン：
+      {{content}}
+      色: {{buttonColor}}、形状: {{buttonShape}}
+
+styleModifiers:
+  luxury:
+    - 金色のグラデーション
+    - シルクのテクスチャ
+    - 上品で洗練された雰囲気
+    - セリフ体フォント
+  casual:
+    - 明るくポップな色使い
+    - 手書き風フォント
+    - 親しみやすい雰囲気
+  professional:
+    - クリーンなレイアウト
+    - ビジネスブルー基調
+    - 信頼感のあるデザイン
+
+customizableFields:
+  - content
+  - fontSize
+  - fontWeight
+  - fontColor
+  - position
+  - buttonColor
+  - buttonShape
+  - backgroundStyle
+  - tone

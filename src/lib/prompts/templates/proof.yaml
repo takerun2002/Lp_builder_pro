@@ -1,0 +1,70 @@
+id: proof_standard
+name: "実績・信頼 - スタンダード"
+category: proof
+format: yaml
+
+globalRulesTemplate: |
+  #ルール
+  以下を画像にそのまま描画する
+  サイズは{{aspectRatio}}
+  {{sectionName}}セクション（社会的証明・実績）
+  背景は{{backgroundStyle}}
+  信頼性を高めるデザイン
+
+elementTemplates:
+  sectionTitle:
+    template: |
+      | セクションタイトル：
+      {{content}}
+      「選ばれる理由」「お客様の声」的な表現
+  testimonial:
+    template: |
+      | お客様の声：
+      名前: {{name}}（{{age}}歳・{{occupation}}）
+      コメント: {{comment}}
+      評価: {{rating}}つ星
+      写真: {{photo}}
+  statistics:
+    template: |
+      | 実績数値：
+      {{number}}{{unit}}
+      ラベル: {{label}}
+      大きく目立つ数字
+  mediaLogos:
+    template: |
+      | メディア掲載：
+      「〇〇で紹介されました」
+      ロゴ一覧: {{logos}}
+  certification:
+    template: |
+      | 認証・資格：
+      {{content}}
+      バッジやシール形式
+
+styleModifiers:
+  authoritative:
+    - 権威的なデザイン
+    - 実績を強調
+    - 信頼性重視
+  friendly:
+    - 親しみやすい口コミ風
+    - リアルな写真
+    - 共感しやすいデザイン
+  data-driven:
+    - 数値を前面に
+    - グラフやチャート
+    - 客観的なデータ
+
+customizableFields:
+  - content
+  - name
+  - age
+  - occupation
+  - comment
+  - rating
+  - photo
+  - number
+  - unit
+  - label
+  - logos
+  - backgroundStyle
