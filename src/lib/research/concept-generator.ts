@@ -3,11 +3,68 @@
  *
  * Task 4.1: 収集データを統合してコンセプトを生成
  * たけるん式6ステップに基づき、競合コンセプト + 収集キーワード → 新コンセプト
+ *
+ * 拡張機能:
+ * - ストーリー7型の自動推薦
+ * - ムーブメント7要素の統合
  */
 
 import { generateText } from "@/lib/ai/gemini";
 import type { CompetitorAnalysis } from "./analyzers/concept-extractor";
 import type { ClassifiedPainPoint } from "./analyzers/pain-classifier";
+import type { DeepResearchResult } from "./types";
+
+// ============================================================
+// ストーリー7型
+// ============================================================
+
+export type StoryType =
+  | "hero_journey"       // ヒーローズジャーニー（王道）
+  | "last_piece"         // 最後のピース（努力→結果出ない→これで解決）
+  | "future_prediction"  // 未来予測（時代変化・危機感）
+  | "origin_return"      // 原点回帰（本来の自然な姿に戻る）
+  | "industry_darkness"  // 業界の闇暴露（不都合な真実）
+  | "mystery_solving"    // 謎解き（原因不明の問題を解明）
+  | "evangelist";        // 伝道師（権威者の弟子・代弁者）
+
+export const STORY_TYPE_LABELS: Record<StoryType, string> = {
+  hero_journey: "ヒーローズジャーニー",
+  last_piece: "最後のピース",
+  future_prediction: "未来予測型",
+  origin_return: "原点回帰型",
+  industry_darkness: "業界の闇暴露",
+  mystery_solving: "謎解き型",
+  evangelist: "伝道師型",
+};
+
+export const STORY_TYPE_DESCRIPTIONS: Record<StoryType, string> = {
+  hero_journey: "困難を乗り越えて成功を掴むストーリー。最も汎用的で共感を得やすい",
+  last_piece: "「色々試したけどダメだった人」に刺さる。最後の一押しを提供",
+  future_prediction: "時代の変化や危機を予見。「今やらないと手遅れ」という緊急性を訴求",
+  origin_return: "本来あるべき姿・自然な状態への回帰を提案。オーガニック系に有効",
+  industry_darkness: "業界の闇や不都合な真実を暴露。共通の敵を作り連帯感を生む",
+  mystery_solving: "「なぜうまくいかないのか」の謎を解明。論理的な読者に響く",
+  evangelist: "権威ある師匠・監修者の教えを代弁。信頼性と権威性を借りる",
+};
+
+// ============================================================
+// ムーブメント7要素
+// ============================================================
+
+export interface MovementElements {
+  vision?: string;              // ビジョン（目指す世界観）
+  manifesto?: string;           // マニフェスト（宣言・約束）
+  commonEnemy?: string;         // 共通の敵
+  slogan?: string;              // スローガン
+  attractiveCharacter?: {       // アトラクティブキャラクター
+    backstory?: string;         // バックストーリー
+    parable?: string;           // 寓話・比喩
+    flaw?: string;              // 欠点
+    polarity?: string;          // 極性・立場
+  };
+  story?: string;               // ストーリー（自由記述）
+  tribe?: string;               // 部族（コミュニティ名）
+}
 
 // ============================================================
 // 型定義
@@ -31,6 +88,13 @@ export interface ConceptGeneratorInput {
   genre?: string;
   productType?: string;
   existingStrengths?: string[];
+
+  // 拡張フィールド
+  movement?: MovementElements;           // ムーブメント7要素
+  storyType?: StoryType;                 // ユーザー指定のストーリー型
+  recommendedStoryType?: StoryType;      // 自動推薦のストーリー型
+  deepResearchResult?: DeepResearchResult; // Deep Researchの結果
+  deepResearchInsights?: string;         // Deep Researchからの洞察（文字列形式）
 }
 
 export interface ConceptCandidate {
@@ -69,6 +133,10 @@ export interface ConceptGenerationResult {
     avoid: string[];
   };
   generatedAt: string;
+  // 拡張フィールド
+  recommendedStoryType?: StoryType;
+  storyTypeLabel?: string;
+  storyTypeDescription?: string;
 }
 
 export interface ConceptGenerationOptions {
@@ -92,6 +160,290 @@ const UCHIDA_6_STEPS = {
 };
 
 // ============================================================
+// ストーリー7型自動推薦
+// ============================================================
+
+/**
+ * ストーリー7型を自動推薦
+ * 入力データ（悩み、キーワード、競合分析）から最適なストーリー型を判定
+ */
+export function recommendStoryType(input: ConceptGeneratorInput): StoryType {
+  // ユーザー指定があればそれを優先
+  if (input.storyType) {
+    return input.storyType;
+  }
+
+  const painTexts = input.painPoints.map(p => p.summary.toLowerCase());
+  const allKeywords = [
+    ...input.keywords.amazon,
+    ...input.keywords.youtube,
+    ...input.keywords.infotop,
+    ...(input.keywords.general || []),
+  ].map(k => k.toLowerCase());
+
+  // Deep Research結果からの情報
+  const industryDarkness = input.deepResearchResult?.competitorAnalysis?.industryDarkness || [];
+  const commonEnemyCandidates = input.deepResearchResult?.competitorAnalysis?.commonEnemyCandidates || [];
+
+  // 1. 努力しているが結果が出ない → last_piece
+  if (hasEffortNoResult(painTexts, allKeywords)) {
+    return "last_piece";
+  }
+
+  // 2. 時代変化や危機感が強い → future_prediction
+  if (hasFutureAnxiety(painTexts, allKeywords)) {
+    return "future_prediction";
+  }
+
+  // 3. 原点回帰が刺さる → origin_return
+  if (hasOriginReturnKeywords(painTexts, allKeywords)) {
+    return "origin_return";
+  }
+
+  // 4. 業界不信・不正への怒り → industry_darkness
+  if (hasIndustryDarkness(painTexts, industryDarkness, commonEnemyCandidates)) {
+    return "industry_darkness";
+  }
+
+  // 5. 原因不明の混乱 → mystery_solving
+  if (hasMysterySymptoms(painTexts, allKeywords)) {
+    return "mystery_solving";
+  }
+
+  // 6. 権威者の弟子・代弁 → evangelist
+  if (hasAuthorityMentor(input, allKeywords)) {
+    return "evangelist";
+  }
+
+  // 7. デフォルト → hero_journey
+  return "hero_journey";
+}
+
+// 判定ヘルパー関数群
+
+function hasEffortNoResult(painTexts: string[], keywords: string[]): boolean {
+  const effortWords = ["頑張っ", "努力", "試した", "やってみた", "続けて", "でもダメ", "結果が出ない", "効果なし"];
+  const allTexts = [...painTexts, ...keywords].join(" ");
+  return effortWords.some(word => allTexts.includes(word));
+}
+
+function hasFutureAnxiety(painTexts: string[], keywords: string[]): boolean {
+  const futureWords = ["今後", "将来", "時代", "淘汰", "ai", "変化", "取り残", "遅れ", "手遅れ", "危機"];
+  const allTexts = [...painTexts, ...keywords].join(" ");
+  return futureWords.some(word => allTexts.includes(word));
+}
+
+function hasOriginReturnKeywords(painTexts: string[], keywords: string[]): boolean {
+  const originWords = ["本来", "自然", "伝統", "オーガニック", "無添加", "原点", "シンプル", "昔ながら", "本質"];
+  const allTexts = [...painTexts, ...keywords].join(" ");
+  return originWords.some(word => allTexts.includes(word));
+}
+
+function hasIndustryDarkness(
+  painTexts: string[],
+  industryDarkness: string[],
+  commonEnemyCandidates: string[]
+): boolean {
+  // Deep Researchで闇や共通の敵が見つかっている場合
+  if (industryDarkness.length >= 2 || commonEnemyCandidates.length >= 2) {
+    return true;
+  }
+
+  const darknessWords = ["嘘", "騙", "詐欺", "業界", "闘", "裏", "本当は", "真実", "秘密", "隠された"];
+  const allTexts = painTexts.join(" ");
+  return darknessWords.some(word => allTexts.includes(word));
+}
+
+function hasMysterySymptoms(painTexts: string[], keywords: string[]): boolean {
+  const mysteryWords = ["なぜ", "原因不明", "わからない", "理由が", "どうして", "謎", "不思議"];
+  const allTexts = [...painTexts, ...keywords].join(" ");
+  return mysteryWords.some(word => allTexts.includes(word));
+}
+
+function hasAuthorityMentor(input: ConceptGeneratorInput, keywords: string[]): boolean {
+  // 監修、師匠、権威者の存在をチェック
+  const authorityWords = ["監修", "師匠", "先生", "教授", "専門家", "権威", "ドクター", "博士"];
+
+  // ムーブメント要素でアトラクティブキャラクターが設定されている場合
+  if (input.movement?.attractiveCharacter?.backstory) {
+    return true;
+  }
+
+  const allTexts = keywords.join(" ");
+  return authorityWords.some(word => allTexts.includes(word));
+}
+
+/**
+ * ストーリー型に基づくプロンプト追加指示を生成
+ */
+function getStoryTypePromptAddition(storyType: StoryType): string {
+  const additions: Record<StoryType, string> = {
+    hero_journey: `
+【ストーリー型: ヒーローズジャーニー】
+- 困難 → 出会い → 変化 → 成功の流れを意識
+- ターゲットが主人公として感情移入できる構成
+- 「あなたも変われる」というメッセージ`,
+
+    last_piece: `
+【ストーリー型: 最後のピース】
+- 「色々試したけどダメだった」共感から入る
+- 「実はこれが足りなかった」という発見を提示
+- 「これさえあれば」という期待感を演出`,
+
+    future_prediction: `
+【ストーリー型: 未来予測型】
+- 時代の変化・業界の転換点を強調
+- 「今やらないと手遅れ」の緊急性
+- 先行者利益を示唆`,
+
+    origin_return: `
+【ストーリー型: 原点回帰型】
+- 「本来あるべき姿」への回帰を提案
+- 自然・シンプル・本質的な価値を強調
+- 「実は〇〇は不要だった」という発見`,
+
+    industry_darkness: `
+【ストーリー型: 業界の闇暴露】
+- 業界の不都合な真実を明かす
+- 共通の敵を設定して連帯感を生む
+- 「だからこそこの方法」という解決策提示`,
+
+    mystery_solving: `
+【ストーリー型: 謎解き型】
+- 「なぜうまくいかないのか」の謎を提示
+- 論理的な原因解明プロセス
+- 「実は原因は〇〇だった」という発見`,
+
+    evangelist: `
+【ストーリー型: 伝道師型】
+- 権威ある師匠・専門家の存在を前面に
+- 「師匠から学んだ秘伝」という特別感
+- 信頼性・専門性を借りた訴求`,
+  };
+
+  return additions[storyType] || additions.hero_journey;
+}
+
+/**
+ * ムーブメント7要素をプロンプトに変換
+ */
+function getMovementPromptAddition(movement?: MovementElements): string {
+  if (!movement) return "";
+
+  const parts: string[] = [];
+
+  if (movement.vision) {
+    parts.push(`ビジョン: ${movement.vision}`);
+  }
+  if (movement.manifesto) {
+    parts.push(`マニフェスト: ${movement.manifesto}`);
+  }
+  if (movement.commonEnemy) {
+    parts.push(`共通の敵: ${movement.commonEnemy}`);
+  }
+  if (movement.slogan) {
+    parts.push(`スローガン: ${movement.slogan}`);
+  }
+  if (movement.attractiveCharacter) {
+    const ac = movement.attractiveCharacter;
+    if (ac.backstory) parts.push(`バックストーリー: ${ac.backstory}`);
+    if (ac.parable) parts.push(`寓話・比喩: ${ac.parable}`);
+    if (ac.flaw) parts.push(`欠点: ${ac.flaw}`);
+    if (ac.polarity) parts.push(`立場・極性: ${ac.polarity}`);
+  }
+  if (movement.story) {
+    parts.push(`ストーリー: ${movement.story}`);
+  }
+  if (movement.tribe) {
+    parts.push(`コミュニティ名: ${movement.tribe}`);
+  }
+
+  if (parts.length === 0) return "";
+
+  return `
+【ムーブメント7要素】
+${parts.map(p => `- ${p}`).join("\n")}
+
+※上記要素をコンセプトに反映させてください`;
+}
+
+/**
+ * Deep Research結果をプロンプトセクションに変換
+ */
+function buildDeepResearchSection(result?: DeepResearchResult): string {
+  if (!result) return "";
+
+  const sections: string[] = [];
+
+  // 信念移転（Belief Transfer）
+  if (result.beliefTransfer) {
+    const bt = result.beliefTransfer;
+    if (bt.currentBeliefs.length > 0 || bt.desiredBeliefs.length > 0) {
+      sections.push(`【信念移転】
+- 現状の信念: ${bt.currentBeliefs.slice(0, 3).join("、") || "N/A"}
+- 望ましい信念: ${bt.desiredBeliefs.slice(0, 3).join("、") || "N/A"}
+- 橋渡しロジック: ${bt.bridgeLogic.slice(0, 2).join("、") || "N/A"}`);
+    }
+  }
+
+  // 損失回避バイアス
+  if (result.lossAversion) {
+    const la = result.lossAversion;
+    if (la.doNothingRisks.length > 0) {
+      sections.push(`【損失回避バイアス】
+- 行動しないリスク: ${la.doNothingRisks.slice(0, 3).join("、")}
+- 機会損失: ${la.opportunityCosts.slice(0, 2).join("、") || "N/A"}`);
+    }
+  }
+
+  // AIDAインサイト
+  if (result.aidaInsights) {
+    const aida = result.aidaInsights;
+    sections.push(`【AIDAインサイト】
+- 注意: ${aida.attention.slice(0, 2).join("、") || "N/A"}
+- 興味: ${aida.interest.slice(0, 2).join("、") || "N/A"}
+- 欲求: ${aida.desire.slice(0, 2).join("、") || "N/A"}
+- 行動: ${aida.action.slice(0, 2).join("、") || "N/A"}`);
+  }
+
+  // 競合分析（業界の闇・共通の敵）
+  if (result.competitorAnalysis) {
+    const ca = result.competitorAnalysis;
+    const parts: string[] = [];
+    if (ca.industryDarkness.length > 0) {
+      parts.push(`業界の闇: ${ca.industryDarkness.slice(0, 2).join("、")}`);
+    }
+    if (ca.commonEnemyCandidates.length > 0) {
+      parts.push(`共通の敵候補: ${ca.commonEnemyCandidates.slice(0, 2).join("、")}`);
+    }
+    if (ca.headlinePatterns.length > 0) {
+      parts.push(`ヘッドラインパターン: ${ca.headlinePatterns.slice(0, 2).join("、")}`);
+    }
+    if (parts.length > 0) {
+      sections.push(`【競合LP分析】\n${parts.map(p => `- ${p}`).join("\n")}`);
+    }
+  }
+
+  // N1ペルソナ
+  if (result.persona) {
+    const p = result.persona;
+    sections.push(`【N1ペルソナ】
+- ${p.name || "ターゲット"}（${p.age || "?"}歳、${p.occupation || "職業不明"}）
+- 痛みの言葉: ${p.painQuotes.slice(0, 2).join("、") || "N/A"}
+- 欲求の言葉: ${p.desireQuotes.slice(0, 2).join("、") || "N/A"}
+- 購買トリガー: ${p.triggers.slice(0, 2).join("、") || "N/A"}`);
+  }
+
+  if (sections.length === 0) return "";
+
+  return `
+## Deep Research インサイト（Web調査結果）
+${sections.join("\n\n")}
+
+※上記インサイトを活用して、より説得力のあるコンセプトを生成してください`;
+}
+
+// ============================================================
 // メイン関数
 // ============================================================
 
@@ -108,13 +460,17 @@ export async function generateConcepts(
   // 1. 入力データを整理
   const preparedData = prepareInputData(input);
 
-  // 2. AI でコンセプト生成
-  const concepts = await generateConceptsWithAI(preparedData, {
-    count,
-    maxHeadlineLength,
-    style: options?.style,
-    includeEmoji: options?.includeEmoji,
-  });
+  // 2. AI でコンセプト生成（ストーリー型・ムーブメント・Deep Research統合）
+  const concepts = await generateConceptsWithAI(
+    preparedData,
+    {
+      count,
+      maxHeadlineLength,
+      style: options?.style,
+      includeEmoji: options?.includeEmoji,
+    },
+    input  // 元の入力を渡してストーリー型・ムーブメント要素を活用
+  );
 
   // 3. スコアリング
   const scoredConcepts = scoreConcepts(concepts, preparedData);
@@ -132,12 +488,19 @@ export async function generateConcepts(
       )
     : null;
 
+  // 推薦されたストーリー型
+  const recommendedStoryType = recommendStoryType(input);
+
   return {
     concepts: scoredConcepts,
     bestConcept,
     insights,
     keywordSuggestions,
     generatedAt: new Date().toISOString(),
+    // ストーリー型情報
+    recommendedStoryType,
+    storyTypeLabel: STORY_TYPE_LABELS[recommendedStoryType],
+    storyTypeDescription: STORY_TYPE_DESCRIPTIONS[recommendedStoryType],
   };
 }
 
@@ -295,15 +658,30 @@ async function generateConceptsWithAI(
     maxHeadlineLength: number;
     style?: string;
     includeEmoji?: boolean;
-  }
+  },
+  input?: ConceptGeneratorInput
 ): Promise<ConceptCandidate[]> {
   const styleGuide = getStyleGuide(options.style);
+
+  // ストーリー型の決定（入力から推薦 or ユーザー指定）
+  const storyType = input ? recommendStoryType(input) : "hero_journey";
+  const storyTypeAddition = getStoryTypePromptAddition(storyType);
+
+  // ムーブメント7要素の取得
+  const movementAddition = input ? getMovementPromptAddition(input.movement) : "";
+
+  // Deep Research結果からの追加インサイト
+  const deepResearchSection = buildDeepResearchSection(input?.deepResearchResult);
 
   const prompt = `あなたはたけるん式コンセプト作成メソッドの専門家です。
 以下のリサーチデータを元に、売れるコンセプトを${options.count}個生成してください。
 
 ## たけるん式6ステップ
 ${Object.values(UCHIDA_6_STEPS).map((s, i) => `${i + 1}. ${s}`).join("\n")}
+
+${storyTypeAddition}
+${movementAddition}
+${deepResearchSection}
 
 ## ターゲット
 ${data.targetSummary}
@@ -326,7 +704,8 @@ ${data.competitorStrengths.join("、")}
 3. 具体的な数字や期間を含める（例: 3日で、90%が）
 4. 競合と差別化されたユニークな切り口
 5. 感情に訴える心理トリガーを使用
-${options.includeEmoji ? "6. 絵文字を適度に使用OK" : "6. 絵文字は使用しない"}
+6. 指定されたストーリー型（${STORY_TYPE_LABELS[storyType]}）の構成を意識
+${options.includeEmoji ? "7. 絵文字を適度に使用OK" : "7. 絵文字は使用しない"}
 
 ## スタイル指示
 ${styleGuide}

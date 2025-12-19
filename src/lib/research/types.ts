@@ -13,8 +13,8 @@ export interface ResearchContext {
   // ターゲット
   target: TargetInfo;
   
-  // トンマナ
-  toneManner: ToneManner;
+  // トンマナ（任意 - デザイン収集時に使用）
+  toneManner?: ToneManner;
   
   // 演者/モデル
   presenter?: PresenterInfo;
@@ -517,12 +517,73 @@ export interface DesignElements {
 
 // === Deep Research結果 ===
 
+// 信念移転（Belief Transfer）
+export interface BeliefTransfer {
+  currentBeliefs: string[];       // 現状の信念
+  desiredBeliefs: string[];       // 望ましい信念
+  bridgeLogic: string[];          // 橋渡しロジック
+}
+
+// 損失回避バイアス
+export interface LossAversion {
+  doNothingRisks: string[];       // 行動しないリスク
+  timeLossExamples: string[];     // 時間損失例
+  opportunityCosts: string[];     // 機会損失
+}
+
+// AIDAインサイト
+export interface AidaInsights {
+  attention: string[];            // 注意を引くポイント
+  interest: string[];             // 興味を持たせるポイント
+  desire: string[];               // 欲求を高めるポイント
+  action: string[];               // 行動を促すポイント
+}
+
+// 競合分析（拡張版）
+export interface DeepCompetitorAnalysis {
+  commonStructure: string[];      // 共通構成
+  headlinePatterns: string[];     // ヘッドラインパターン
+  ctaPatterns: string[];          // CTAパターン
+  industryDarkness: string[];     // 業界の闘・不都合な真実
+  commonEnemyCandidates: string[]; // 共通の敵の候補
+}
+
+// アトラクティブキャラクター
+export interface AttractiveCharacter {
+  backstory: string;              // バックストーリー
+  parable: string;                // 寓話・比喩
+  flaw: string;                   // 欠点
+  polarity: string;               // 極性・立場
+}
+
+// N1ペルソナ
+export interface N1Persona {
+  name: string;                   // 名前
+  age: number;                    // 年齢
+  occupation: string;             // 職業
+  context: string;                // 状況・背景
+  painQuotes: string[];           // 痛みの言葉
+  desireQuotes: string[];         // 欲求の言葉
+  triggers: string[];             // 購買トリガー
+  hesitations: string[];          // 躊躇・障壁
+  attractiveCharacter?: AttractiveCharacter;
+}
+
+// Deep Research結果（拡張版）
 export interface DeepResearchResult {
+  // 基本フィールド
   trendReport: string;
   marketAnalysis: string;
   psychologyInsights: string;
   recommendations: string[];
   citations: Citation[];
+
+  // 拡張フィールド（コピーライティング強化）
+  beliefTransfer?: BeliefTransfer;
+  lossAversion?: LossAversion;
+  aidaInsights?: AidaInsights;
+  competitorAnalysis?: DeepCompetitorAnalysis;
+  persona?: N1Persona;
 }
 
 export interface Citation {
