@@ -258,7 +258,7 @@ export default function ProjectScraperPage() {
         {/* Input */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">URL入力</CardTitle>
+            <CardTitle className="text-base">ステップ 1: LPのURLを入力</CardTitle>
             <CardDescription>取り込みたいLPのURLを入力してください</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -281,6 +281,57 @@ export default function ProjectScraperPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Usage Guide - 保存後の使い方 */}
+        {!result && !loading && (
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                💡 取り込み後にできること
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="flex items-start gap-2 bg-background rounded-md p-3 border">
+                  <span className="text-lg">🎨</span>
+                  <div>
+                    <p className="text-sm font-medium">参考LPとして活用</p>
+                    <p className="text-xs text-muted-foreground">
+                      ワークスペースで「参考LP」として選択し、トンマナに合わせた画像生成ができます
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 bg-background rounded-md p-3 border">
+                  <span className="text-lg">✨</span>
+                  <div>
+                    <p className="text-sm font-medium">AIアシスタントで指示</p>
+                    <p className="text-xs text-muted-foreground">
+                      「このLPのトンマナで画像を生成して」と指示できます
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 bg-background rounded-md p-3 border">
+                  <span className="text-lg">🪄</span>
+                  <div>
+                    <p className="text-sm font-medium">マジックペンで編集</p>
+                    <p className="text-xs text-muted-foreground">
+                      取り込んだ画像をマジックペンで自由に編集できます
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 bg-background rounded-md p-3 border">
+                  <span className="text-lg">📋</span>
+                  <div>
+                    <p className="text-sm font-medium">OCRテキスト抽出</p>
+                    <p className="text-xs text-muted-foreground">
+                      LPのテキストを自動抽出し、原稿として活用できます
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Error */}
         {error && (
@@ -426,18 +477,38 @@ export default function ProjectScraperPage() {
           </Card>
         )}
 
-        {/* Imported count */}
+        {/* Imported count & Next Steps */}
         {importedIdxs.size > 0 && (
           <Card className="bg-green-50 border-green-200">
-            <CardContent className="py-4 flex items-center justify-between">
-              <div className="text-green-700">
-                {importedIdxs.size}件のセクションをインポートしました
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base text-green-700 flex items-center gap-2">
+                ✅ インポート完了！
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-green-700">
+                {importedIdxs.size}件のセクションをプロジェクトに追加しました
+              </p>
+              <div className="bg-white/70 rounded-md p-3 space-y-2">
+                <p className="text-sm font-medium text-green-800">次のステップ:</p>
+                <ul className="text-sm text-green-700 space-y-1">
+                  <li>• ワークスペースで各セクションを確認・編集</li>
+                  <li>• マジックペンで細部を調整</li>
+                  <li>• AIアシスタントで「このLPのトンマナで」と指示して画像生成</li>
+                </ul>
               </div>
-              <Link href={`/projects/${projectId}`}>
-                <Button variant="outline" size="sm">
-                  プロジェクトを確認 →
-                </Button>
-              </Link>
+              <div className="flex gap-2">
+                <Link href={`/projects/${projectId}/workspace`} className="flex-1">
+                  <Button className="w-full">
+                    ワークスペースで編集 →
+                  </Button>
+                </Link>
+                <Link href={`/projects/${projectId}`}>
+                  <Button variant="outline">
+                    プロジェクト詳細
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         )}

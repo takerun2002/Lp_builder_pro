@@ -370,7 +370,7 @@ export function ReferencePanel({
                 value={localManuscript}
                 onChange={(e) => setLocalManuscript(e.target.value)}
                 placeholder="LP原稿を入力...&#10;&#10;例：&#10;【ヘッドライン】&#10;たった3ステップで売上2倍！&#10;&#10;【サブヘッド】&#10;初心者でも簡単に..."
-                className="flex-1 min-h-[200px] text-xs resize-none"
+                className="flex-1 min-h-[150px] text-xs resize-none"
               />
               <div className="flex gap-2">
                 <Button
@@ -402,9 +402,19 @@ export function ReferencePanel({
                   AIで分割
                 </Button>
               </div>
-              <p className="text-[10px] text-muted-foreground">
-                「AIで分割」でセクションごとに原稿を自動分割
-              </p>
+
+              {/* Usage Guide */}
+              <div className="mt-2 p-2 bg-primary/5 rounded-md border border-primary/20">
+                <p className="text-[10px] font-medium text-primary mb-1">💡 原稿を保存すると:</p>
+                <ul className="text-[10px] text-muted-foreground space-y-0.5">
+                  <li>• AIアシスタントで「この原稿で画像生成」と指示可能</li>
+                  <li>• 「AIで分割」でセクションごとに自動分割</li>
+                  <li>• 構成作成時の参考として活用</li>
+                </ul>
+                <p className="text-[10px] text-muted-foreground mt-1 italic">
+                  例: 「この原稿のファーストビューを生成して」
+                </p>
+              </div>
             </div>
           </TabsContent>
         </Tabs>

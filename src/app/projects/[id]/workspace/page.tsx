@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MagicPenEditorFull } from "@/components/magic-pen/MagicPenEditorFull";
 import { ReferencePanel } from "./components/ReferencePanel";
 import { QualitySelector, QUALITY_CONFIG, type ImageQuality } from "./components/QualitySelector";
+import { ReferenceLPSelector } from "@/components/workspace";
 
 // ============================================================
 // Types
@@ -144,6 +145,9 @@ export default function WorkspacePage() {
   const [mergeMode, setMergeMode] = useState(false);
   const [mergeSectionId, setMergeSectionId] = useState<string | null>(null);
   const [draggingPaletteId, setDraggingPaletteId] = useState<string | null>(null);
+
+  // Reference LP for AI generation
+  const [selectedReferenceLP, setSelectedReferenceLP] = useState<string | null>(null);
 
   // ============================================================
   // Data Fetching
@@ -551,15 +555,25 @@ export default function WorkspacePage() {
           detectedAspect = "16:9";
         }
 
+        // Build prompt with reference LP if selected
+        let finalPrompt = promptText;
+        if (selectedReferenceLP) {
+          const refSwipe = swipeFiles.find((sf) => sf.id === selectedReferenceLP);
+          if (refSwipe) {
+            finalPrompt = `${promptText}\n\n【参考LPのトンマナに合わせて生成してください】\n参考LP: ${refSwipe.name}\n色、フォント、スタイルを参考LPに合わせてください。`;
+          }
+        }
+
         // Generate image using manga API
         const res = await fetch("/api/generate/manga", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            prompt: promptText,
+            prompt: finalPrompt,
             style: detectedStyle,
             aspectRatio: detectedAspect,
             colorMode: genOptions.colorMode,
+            refSwipeIds: selectedReferenceLP ? [selectedReferenceLP] : undefined,
           }),
         });
 
@@ -1292,6 +1306,21 @@ export default function WorkspacePage() {
 
             {/* Chat Input */}
             <div className="p-3 border-t bg-muted/30 space-y-2">
+              {/* Reference LP Selector */}
+              {swipeFiles.length > 0 && (
+                <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                  <span className="text-[10px] text-muted-foreground shrink-0">参考LP:</span>
+                  <ReferenceLPSelector
+                    swipeFiles={swipeFiles}
+                    selectedId={selectedReferenceLP}
+                    onSelect={setSelectedReferenceLP}
+                    compact
+                  />
+                  {selectedReferenceLP && (
+                    <span className="text-[10px] text-primary">トンマナ合わせ有効</span>
+                  )}
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                   <span className="bg-background px-1.5 py-0.5 rounded border">{styleLabels[genOptions.style]}</span>

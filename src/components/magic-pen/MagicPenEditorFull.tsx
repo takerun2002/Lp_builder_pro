@@ -113,6 +113,9 @@ export function MagicPenEditorFull({
   const [invertMask, setInvertMask] = useState(false);
   const [showSwipeSelector, setShowSwipeSelector] = useState(false);
 
+  // Tone & Manner reference LP
+  const [tonMannerLPId, setTonMannerLPId] = useState<string | null>(null);
+
   // Drawing refs
   const isDrawingRef = useRef(false);
   const lastPtRef = useRef<{ x: number; y: number } | null>(null);
@@ -538,6 +541,30 @@ export function MagicPenEditorFull({
     setPrompt((prev) => (prev.includes(label) ? prev : prev ? `${prev.trimEnd()} ${label}` : label));
   };
 
+  // === Set Tone & Manner LP ===
+  const handleTonMannerSelect = async (swipeId: string | null) => {
+    setTonMannerLPId(swipeId);
+    if (!swipeId) return;
+
+    const swipe = swipeFiles.find((sf) => sf.id === swipeId);
+    if (!swipe) return;
+
+    // Check if already added as ref image
+    const alreadyAdded = refImages.some((r) => r.id === swipeId);
+    if (!alreadyAdded && refImages.length < MAX_REF_IMAGES) {
+      await addSwipeAsRef(swipe);
+    }
+
+    // Add tone & manner instruction to prompt if not present
+    const instruction = "【参考LPのトンマナに合わせて編集】";
+    setPrompt((prev) => {
+      if (prev.includes(instruction)) return prev;
+      const idx = refImages.length;
+      const label = `参考${idx + 1}（画像#${idx + 3}）`;
+      return prev ? `${prev.trimEnd()}\n\n${instruction}\n${label}の色・フォント・スタイルに合わせてください。` : `${instruction}\n${label}の色・フォント・スタイルに合わせてください。`;
+    });
+  };
+
   // === Display size ===
   const getDisplaySize = useCallback(() => {
     if (!naturalSize) return { width: 600, height: 400 };
@@ -602,6 +629,59 @@ export function MagicPenEditorFull({
               )}
             </CardContent>
           </Card>
+
+          {/* Tone & Manner LP Selector */}
+          {swipeFiles.length > 0 && (
+            <Card className="border-primary/30 bg-primary/5">
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <span>🎨</span>
+                  トンマナ参照LP
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <select
+                  value={tonMannerLPId || ""}
+                  onChange={(e) => handleTonMannerSelect(e.target.value || null)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">指定なし（デフォルト）</option>
+                  {swipeFiles.map((sf) => (
+                    <option key={sf.id} value={sf.id}>
+                      {sf.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  💡 選択すると、このLPの色・フォント・スタイルに合わせて編集されます。プロンプトにも自動で指示が追加されます。
+                </p>
+                {tonMannerLPId && (
+                  <div className="flex items-center gap-2 p-2 bg-background rounded border">
+                    <div className="w-10 h-10 rounded overflow-hidden border shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={`/api/swipe-files/${tonMannerLPId}/image`}
+                        alt="Reference LP"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">
+                        {swipeFiles.find((sf) => sf.id === tonMannerLPId)?.name}
+                      </p>
+                      <p className="text-[10px] text-primary">トンマナ適用中</p>
+                    </div>
+                    <button
+                      onClick={() => setTonMannerLPId(null)}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Reference Images */}
           <Card>

@@ -18,11 +18,8 @@ import {
   Bot,
   Image as ImageIcon,
   Search,
-  FileSpreadsheet,
-  Link2,
-  Cloud,
-  RefreshCw
 } from "lucide-react";
+import { StorageQuickSettings } from "@/components/settings";
 
 type ApiKeySource = "env" | "stored" | "none";
 
@@ -440,85 +437,8 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {/* ===== Google Workspace連携セクション ===== */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Cloud className="w-5 h-5 text-blue-500" />
-            Google Workspace連携
-          </CardTitle>
-          <CardDescription>
-            リサーチ結果をGoogle Sheetsに自動保存、レポートをGoogle Docsに出力できます。
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            {/* ストレージ設定 */}
-            <div className="rounded-lg border p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-green-600" />
-                <h4 className="font-medium text-sm">ストレージ設定</h4>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                ローカルDB・Google Sheetsのハイブリッド保存を設定
-              </p>
-              <ul className="text-xs text-muted-foreground space-y-1 ml-4 list-disc">
-                <li>リサーチ結果を自動でGoogle Sheetsに保存</li>
-                <li>画像ファイルをGoogle Driveに保存</li>
-                <li>オフライン時はローカルにキャッシュ</li>
-              </ul>
-              <Link href="/dev/storage-settings">
-                <Button variant="outline" size="sm" className="w-full gap-2">
-                  <Link2 className="w-4 h-4" />
-                  ストレージ設定を開く
-                </Button>
-              </Link>
-            </div>
-
-            {/* Google同期 */}
-            <div className="rounded-lg border p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <RefreshCw className="w-5 h-5 text-blue-600" />
-                <h4 className="font-medium text-sm">Google同期</h4>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                手動でGoogleと同期・データのエクスポート
-              </p>
-              <ul className="text-xs text-muted-foreground space-y-1 ml-4 list-disc">
-                <li>リサーチ結果をフォーマット付きでエクスポート</li>
-                <li>コンセプト案・競合分析を共有</li>
-                <li>チームメンバーとリアルタイム共同編集</li>
-              </ul>
-              <Link href="/dev/google-sync">
-                <Button variant="outline" size="sm" className="w-full gap-2">
-                  <Link2 className="w-4 h-4" />
-                  Google同期を開く
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* セットアップガイド */}
-          <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 p-4 space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-400">
-              <AlertCircle className="w-4 h-4" />
-              セルフホスト設定
-            </div>
-            <p className="text-xs text-amber-600 dark:text-amber-300">
-              Google Workspace連携を使用するには、Google Cloud ConsoleでOAuth 2.0クライアントを作成し、
-              クライアントIDとシークレットを「ストレージ設定」画面で設定してください。
-            </p>
-            <a
-              href="https://console.cloud.google.com/apis/credentials"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-xs text-amber-700 dark:text-amber-400 hover:underline"
-            >
-              Google Cloud Console <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-        </CardContent>
-      </Card>
+      {/* ===== ストレージ設定セクション（UX改善版） ===== */}
+      <StorageQuickSettings />
 
       <Card>
         <CardHeader>

@@ -11,9 +11,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { StorageQuickSettings, GoogleAuthSetupWizard } from "@/components/settings";
+import { Settings, Sparkles, Database } from "lucide-react";
 
 type StorageMode = "local" | "cloud" | "hybrid";
 type SyncStatus = "idle" | "syncing" | "success" | "error";
@@ -52,10 +53,6 @@ function StorageSettingsContent() {
     text: string;
   } | null>(null);
 
-  // OAuth設定用
-  const [clientId, setClientId] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
-  const [savingOAuth, setSavingOAuth] = useState(false);
 
   // URLパラメータからメッセージを表示
   useEffect(() => {
@@ -90,94 +87,6 @@ function StorageSettingsContent() {
   useEffect(() => {
     loadConfig();
   }, [loadConfig]);
-
-  // OAuth設定を保存
-  const handleSaveOAuthConfig = async () => {
-    if (!clientId.trim() || !clientSecret.trim()) {
-      setMessage({ type: "error", text: "Client IDとClient Secretを入力してください" });
-      return;
-    }
-
-    setSavingOAuth(true);
-    try {
-      const res = await fetch("/api/storage/oauth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clientId: clientId.trim(),
-          clientSecret: clientSecret.trim(),
-        }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        setMessage({ type: "success", text: "OAuth設定を保存しました" });
-        setClientId("");
-        setClientSecret("");
-        await loadConfig();
-      } else {
-        setMessage({ type: "error", text: data.error || "保存に失敗しました" });
-      }
-    } catch {
-      setMessage({ type: "error", text: "保存に失敗しました" });
-    } finally {
-      setSavingOAuth(false);
-    }
-  };
-
-  // Google認証を開始
-  const handleGoogleConnect = async () => {
-    try {
-      const res = await fetch("/api/storage/oauth");
-      const data = await res.json();
-      if (data.ok) {
-        window.location.href = data.authUrl;
-      } else {
-        setMessage({ type: "error", text: data.error || "認証URLの取得に失敗しました" });
-      }
-    } catch {
-      setMessage({ type: "error", text: "認証の開始に失敗しました" });
-    }
-  };
-
-  // Google連携を解除
-  const handleGoogleDisconnect = async () => {
-    if (!confirm("Google連携を解除しますか？")) {
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/storage/oauth", { method: "DELETE" });
-      const data = await res.json();
-      if (data.ok) {
-        setMessage({ type: "success", text: "Google連携を解除しました" });
-        await loadConfig();
-      } else {
-        setMessage({ type: "error", text: data.error || "解除に失敗しました" });
-      }
-    } catch {
-      setMessage({ type: "error", text: "解除に失敗しました" });
-    }
-  };
-
-  // ストレージモードを変更
-  const handleModeChange = async (mode: StorageMode) => {
-    try {
-      const res = await fetch("/api/storage/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        setConfig(data.config);
-        setMessage({ type: "success", text: "モードを変更しました" });
-      } else {
-        setMessage({ type: "error", text: data.error || "変更に失敗しました" });
-      }
-    } catch {
-      setMessage({ type: "error", text: "変更に失敗しました" });
-    }
-  };
 
   // 自動同期を切り替え
   const handleAutoSyncToggle = async () => {
@@ -260,7 +169,7 @@ function StorageSettingsContent() {
           <div>
             <h1 className="text-2xl font-bold">ストレージ設定</h1>
             <p className="text-sm text-muted-foreground">
-              ローカル・クラウドストレージの設定と同期
+              データの保存先とGoogle Workspace連携の設定
             </p>
           </div>
           <Link href="/settings">
@@ -289,134 +198,59 @@ function StorageSettingsContent() {
           </div>
         )}
 
-        {/* Storage Mode */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">ストレージモード</CardTitle>
-            <CardDescription>データの保存先を選択します</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              {(["local", "hybrid", "cloud"] as StorageMode[]).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => handleModeChange(mode)}
-                  className={`rounded-lg border p-4 text-left transition-colors ${
-                    config?.mode === mode
-                      ? "border-primary bg-primary/5"
-                      : "border-input hover:bg-muted"
-                  }`}
-                  disabled={
-                    (mode === "cloud" || mode === "hybrid") &&
-                    !status?.googleAuthenticated
+        {/* タブ形式のUI */}
+        <Tabs defaultValue={status?.googleConfigured ? "storage" : "setup"} className="space-y-4">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="setup" className="gap-2">
+              <Sparkles className="w-4 h-4" />
+              <span className="hidden sm:inline">セットアップ</span>
+            </TabsTrigger>
+            <TabsTrigger value="storage" className="gap-2">
+              <Database className="w-4 h-4" />
+              <span className="hidden sm:inline">ストレージ</span>
+            </TabsTrigger>
+            <TabsTrigger value="sync" className="gap-2">
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">同期設定</span>
+            </TabsTrigger>
+          </TabsList>
+
+          {/* セットアップタブ - Google認証ウィザード */}
+          <TabsContent value="setup">
+            <GoogleAuthSetupWizard
+              googleConfigured={status?.googleConfigured}
+              googleAuthenticated={status?.googleAuthenticated}
+              onComplete={loadConfig}
+              onSaveOAuth={async (id, secret) => {
+                try {
+                  const res = await fetch("/api/storage/oauth", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ clientId: id, clientSecret: secret }),
+                  });
+                  const data = await res.json();
+                  if (data.ok) {
+                    await loadConfig();
+                    return true;
                   }
-                >
-                  <div className="font-medium">
-                    {mode === "local" && "ローカル"}
-                    {mode === "hybrid" && "ハイブリッド"}
-                    {mode === "cloud" && "クラウド"}
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {mode === "local" && "SQLiteのみ"}
-                    {mode === "hybrid" && "推奨：自動最適化"}
-                    {mode === "cloud" && "Google Workspace"}
-                  </div>
-                </button>
-              ))}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {config?.mode === "local" &&
-                "すべてのデータをローカルSQLiteに保存します"}
-              {config?.mode === "hybrid" &&
-                "データ種別に応じて最適な保存先を自動選択します"}
-              {config?.mode === "cloud" &&
-                "データをGoogle Sheets/Driveに保存します"}
-            </p>
-          </CardContent>
-        </Card>
+                  return false;
+                } catch {
+                  return false;
+                }
+              }}
+            />
+          </TabsContent>
 
-        {/* Google OAuth Setup */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Google Workspace連携</CardTitle>
-            <CardDescription>
-              Google Sheets・Driveとの同期を有効にします
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Connection Status */}
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`h-3 w-3 rounded-full ${
-                    status?.googleAuthenticated ? "bg-green-500" : "bg-gray-300"
-                  }`}
-                />
-                <span>
-                  {status?.googleAuthenticated ? "接続済み" : "未接続"}
-                </span>
-              </div>
-              {status?.googleAuthenticated ? (
-                <Button variant="outline" size="sm" onClick={handleGoogleDisconnect}>
-                  連携解除
-                </Button>
-              ) : status?.googleConfigured ? (
-                <Button onClick={handleGoogleConnect}>Googleと連携</Button>
-              ) : null}
-            </div>
+          {/* ストレージタブ - モード選択 */}
+          <TabsContent value="storage">
+            <StorageQuickSettings showHeader={false} />
+          </TabsContent>
 
-            {/* OAuth Config Form (if not configured) */}
-            {!status?.googleConfigured && (
-              <div className="space-y-4 rounded-lg border bg-muted/30 p-4">
-                <div className="text-sm">
-                  <p className="font-medium">OAuth設定が必要です</p>
-                  <p className="text-muted-foreground">
-                    Google Cloud Consoleでプロジェクトを作成し、OAuth 2.0
-                    クライアントIDを取得してください。
-                  </p>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="clientId">Client ID</Label>
-                    <Input
-                      id="clientId"
-                      type="text"
-                      value={clientId}
-                      onChange={(e) => setClientId(e.target.value)}
-                      placeholder="xxxx.apps.googleusercontent.com"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="clientSecret">Client Secret</Label>
-                    <Input
-                      id="clientSecret"
-                      type="password"
-                      value={clientSecret}
-                      onChange={(e) => setClientSecret(e.target.value)}
-                      placeholder="GOCSPX-..."
-                    />
-                  </div>
-                  <Button
-                    onClick={handleSaveOAuthConfig}
-                    disabled={savingOAuth || !clientId || !clientSecret}
-                  >
-                    {savingOAuth ? "保存中..." : "OAuth設定を保存"}
-                  </Button>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  <p>リダイレクトURIに以下を設定してください：</p>
-                  <code className="rounded bg-muted px-2 py-1">
-                    http://localhost:3000/api/storage/oauth/callback
-                  </code>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Sync Settings */}
-        {config?.mode !== "local" && (
-          <Card>
+          {/* 同期設定タブ */}
+          <TabsContent value="sync" className="space-y-4">
+            {/* Sync Settings */}
+            {config?.mode !== "local" ? (
+              <Card>
             <CardHeader>
               <CardTitle className="text-base">同期設定</CardTitle>
             </CardHeader>
@@ -513,71 +347,83 @@ function StorageSettingsContent() {
                   )}
                 </div>
               )}
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+            ) : (
+              <Card>
+                <CardContent className="py-8">
+                  <p className="text-center text-muted-foreground">
+                    ローカルモードでは同期設定は不要です。
+                    <br />
+                    Google連携を使用する場合は「ストレージ」タブでモードを変更してください。
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
-        {/* Data Mapping Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">データ保存先マッピング</CardTitle>
-            <CardDescription>
-              ハイブリッドモードでのデータ種別ごとの保存先
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="py-2 text-left">データ種別</th>
-                    <th className="py-2 text-center">ローカル</th>
-                    <th className="py-2 text-center">Sheets</th>
-                    <th className="py-2 text-center">Drive</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b">
-                    <td className="py-2">ユーザー設定</td>
-                    <td className="py-2 text-center text-green-600">Master</td>
-                    <td className="py-2 text-center">-</td>
-                    <td className="py-2 text-center">-</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2">リサーチ結果</td>
-                    <td className="py-2 text-center text-gray-500">Cache</td>
-                    <td className="py-2 text-center text-green-600">Master</td>
-                    <td className="py-2 text-center">-</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2">コンセプト案</td>
-                    <td className="py-2 text-center text-gray-500">Draft</td>
-                    <td className="py-2 text-center text-green-600">Shared</td>
-                    <td className="py-2 text-center">-</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2">生成画像</td>
-                    <td className="py-2 text-center text-gray-500">Cache</td>
-                    <td className="py-2 text-center">-</td>
-                    <td className="py-2 text-center text-green-600">Master</td>
-                  </tr>
-                  <tr className="border-b">
-                    <td className="py-2">LP HTMLエクスポート</td>
-                    <td className="py-2 text-center">-</td>
-                    <td className="py-2 text-center">-</td>
-                    <td className="py-2 text-center text-green-600">Master</td>
-                  </tr>
-                  <tr>
-                    <td className="py-2">ナレッジYAML</td>
-                    <td className="py-2 text-center text-green-600">Master</td>
-                    <td className="py-2 text-center">-</td>
-                    <td className="py-2 text-center text-blue-600">Shared</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Data Mapping Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">データ保存先マッピング</CardTitle>
+                <CardDescription>
+                  ハイブリッドモードでのデータ種別ごとの保存先
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="py-2 text-left">データ種別</th>
+                        <th className="py-2 text-center">ローカル</th>
+                        <th className="py-2 text-center">Sheets</th>
+                        <th className="py-2 text-center">Drive</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b">
+                        <td className="py-2">ユーザー設定</td>
+                        <td className="py-2 text-center text-green-600">Master</td>
+                        <td className="py-2 text-center">-</td>
+                        <td className="py-2 text-center">-</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="py-2">リサーチ結果</td>
+                        <td className="py-2 text-center text-gray-500">Cache</td>
+                        <td className="py-2 text-center text-green-600">Master</td>
+                        <td className="py-2 text-center">-</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="py-2">コンセプト案</td>
+                        <td className="py-2 text-center text-gray-500">Draft</td>
+                        <td className="py-2 text-center text-green-600">Shared</td>
+                        <td className="py-2 text-center">-</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="py-2">生成画像</td>
+                        <td className="py-2 text-center text-gray-500">Cache</td>
+                        <td className="py-2 text-center">-</td>
+                        <td className="py-2 text-center text-green-600">Master</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="py-2">LP HTMLエクスポート</td>
+                        <td className="py-2 text-center">-</td>
+                        <td className="py-2 text-center">-</td>
+                        <td className="py-2 text-center text-green-600">Master</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2">ナレッジYAML</td>
+                        <td className="py-2 text-center text-green-600">Master</td>
+                        <td className="py-2 text-center">-</td>
+                        <td className="py-2 text-center text-blue-600">Shared</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
