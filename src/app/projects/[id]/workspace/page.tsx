@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MagicPenEditorFull } from "@/components/magic-pen/MagicPenEditorFull";
+import { MagicPenEditorV2 } from "@/components/magic-pen/MagicPenEditorV2";
 import { ReferencePanel } from "./components/ReferencePanel";
 import { QualitySelector, QUALITY_CONFIG, type ImageQuality } from "./components/QualitySelector";
 import { ReferenceLPSelector } from "@/components/workspace";
@@ -265,7 +265,7 @@ export default function WorkspacePage() {
     setEditImageDataUrl(null);
   };
 
-  // Handle save from MagicPenEditorFull
+  // Handle save from MagicPenEditorV2
   const handleMagicPenSave = async (resultDataUrl: string) => {
     if (!editingSection) return;
 
@@ -667,11 +667,11 @@ export default function WorkspacePage() {
     return null;
   }
 
-  // Edit Mode UI - 完成版マジックペンを使用
+  // Edit Mode UI - V2マジックペン（番号付きマスク & インラインチャット）
   if (editMode && editingSection && editImageDataUrl) {
     return (
       <div className="h-screen bg-background">
-        <MagicPenEditorFull
+        <MagicPenEditorV2
           imageDataUrl={editImageDataUrl}
           projectId={projectId}
           onSave={handleMagicPenSave}
