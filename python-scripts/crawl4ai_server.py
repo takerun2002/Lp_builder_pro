@@ -67,7 +67,7 @@ async def scrape_lp_archive(request: ScrapeRequest):
     - ボット検出回避機能付き
     """
     try:
-        from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
+        from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, LLMConfig
         from crawl4ai.extraction_strategy import LLMExtractionStrategy, JsonCssExtractionStrategy
 
         async with AsyncWebCrawler(
@@ -83,9 +83,12 @@ async def scrape_lp_archive(request: ScrapeRequest):
 
             # 抽出戦略の設定
             if request.use_llm and request.gemini_api_key:
-                extraction_strategy = LLMExtractionStrategy(
+                llm_config = LLMConfig(
                     provider="gemini/gemini-2.0-flash",
-                    api_token=request.gemini_api_key,
+                    api_token=request.gemini_api_key
+                )
+                extraction_strategy = LLMExtractionStrategy(
+                    llm_config=llm_config,
                     extraction_type="schema",
                     schema={
                         "type": "object",
@@ -146,8 +149,8 @@ async def scrape_lp_archive(request: ScrapeRequest):
 
             config = CrawlerRunConfig(
                 extraction_strategy=extraction_strategy,
-                wait_for="css:.lp-item, css:[class*='lp-card'], css:article, css:.archive-item",
-                delay_before_return_html=2.0,
+                wait_for="css:body",  # ページ読み込み完了を待つ
+                delay_before_return_html=3.0,
                 screenshot=False,
                 magic=True,  # 自動ボット検出回避
             )
@@ -168,7 +171,11 @@ async def scrape_lp_archive(request: ScrapeRequest):
                 if isinstance(extracted, dict) and "lps" in extracted:
                     lps = extracted["lps"][:request.limit]
                 elif isinstance(extracted, list):
-                    lps = extracted[:request.limit]
+                    # LLMが[{"lps": [...]}]形式で返す場合への対応
+                    if len(extracted) > 0 and isinstance(extracted[0], dict) and "lps" in extracted[0]:
+                        lps = extracted[0]["lps"][:request.limit]
+                    else:
+                        lps = extracted[:request.limit]
 
                 # 結果をフィルタリング（有効なURLのみ）
                 valid_results = []
