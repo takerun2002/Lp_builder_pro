@@ -80,12 +80,34 @@ const LF8_OPTIONS: { id: LF8Type; label: string; description: string; icon: stri
 // 型定義
 // ============================================
 
+// Yahoo知恵袋結果（簡易版）
+interface ChiebukuroResultSimple {
+  title: string;
+  content?: string;
+  url?: string;
+  views?: number;
+  answers?: number;
+  depthScore?: number;
+  urgencyScore?: number;
+}
+
+// Amazon書籍結果（簡易版）
+interface AmazonBookResultSimple {
+  title: string;
+  author?: string;
+  rating?: number;
+  reviewCount?: number;
+  extractedKeywords?: string[];
+}
+
 interface ResearchData {
   context: ResearchContext | null;
   infotopProducts: InfotopProduct[];  // Infotop商品
   competitors: CompetitorAnalysis[];
   painPoints: ClassifiedPainPoint[];
   collectedPains: string[];            // 収集した悩み（知恵袋+Amazon）
+  chiebukuroResults?: ChiebukuroResultSimple[];  // Yahoo知恵袋の生結果
+  amazonBooksResults?: AmazonBookResultSimple[]; // Amazon書籍の生結果
   keywords: KeywordRankingResult | null;
   concepts: ConceptCandidate[];
   deepResearchResult?: DeepResearchResult;  // Deep Research結果
@@ -445,6 +467,8 @@ export default function ResearchPage() {
 
     await wizard.runStep("pain_collection", async () => {
       const collectedPains: string[] = [];
+      let chiebukuroResults: ChiebukuroResultSimple[] = [];
+      let amazonBooksResults: AmazonBookResultSimple[] = [];
 
       // Infotopから悩みを収集
       data.infotopProducts.forEach((p) => {
@@ -467,11 +491,21 @@ export default function ResearchPage() {
         });
         const chiebukuroResult = await chiebukuroRes.json();
         if (chiebukuroResult.success && chiebukuroResult.chiebukuroResults) {
+          // 生結果を保存
+          chiebukuroResults = chiebukuroResult.chiebukuroResults.map((r: ChiebukuroResultSimple) => ({
+            title: r.title || "",
+            content: r.content,
+            url: r.url,
+            views: r.views,
+            answers: r.answers,
+            depthScore: r.depthScore,
+            urgencyScore: r.urgencyScore,
+          }));
           const pains = chiebukuroResult.chiebukuroResults
-            .map((r: { question?: string }) => r.question)
+            .map((r: { question?: string; title?: string }) => r.question || r.title)
             .filter(Boolean);
           collectedPains.push(...pains);
-          addLog("success", `Yahoo知恵袋から${pains.length}件の悩みを収集`);
+          addLog("success", `Yahoo知恵袋から${chiebukuroResults.length}件の悩みを収集`);
         }
       } catch {
         addLog("warning", "Yahoo知恵袋の収集に失敗しました");
@@ -491,10 +525,15 @@ export default function ResearchPage() {
         });
         const amazonResult = await amazonRes.json();
         if (amazonResult.success && amazonResult.amazonResults) {
-          const titles = amazonResult.amazonResults
-            .map((r: { title?: string }) => r.title)
-            .filter(Boolean);
-          addLog("success", `Amazon書籍から${titles.length}件のタイトルを収集`);
+          // 生結果を保存
+          amazonBooksResults = amazonResult.amazonResults.map((r: AmazonBookResultSimple) => ({
+            title: r.title || "",
+            author: r.author,
+            rating: r.rating,
+            reviewCount: r.reviewCount,
+            extractedKeywords: r.extractedKeywords || [],
+          }));
+          addLog("success", `Amazon書籍から${amazonBooksResults.length}件のタイトルを収集`);
         }
       } catch {
         addLog("warning", "Amazon書籍の収集に失敗しました");
@@ -506,7 +545,12 @@ export default function ResearchPage() {
       }
 
       addLog("success", `合計${collectedPains.length}件の悩みを収集しました`);
-      setData((prev) => ({ ...prev, collectedPains }));
+      setData((prev) => ({
+        ...prev,
+        collectedPains,
+        chiebukuroResults,
+        amazonBooksResults,
+      }));
       return collectedPains;
     });
 
@@ -890,8 +934,8 @@ ${data.deepResearchResult.citations?.map(c => `- ${c.title}: ${c.url}`).join('\n
       lines.push("## 📋 リサーチ設定", "");
       lines.push(`- **ジャンル**: ${GENRE_LABELS[data.context.genre]}`);
       if (data.context.subGenre) lines.push(`- **サブジャンル**: ${data.context.subGenre}`);
-      lines.push(`- **ターゲット年齢**: ${data.context.target.ageGroups.join(", ")}`);
-      lines.push(`- **性別**: ${data.context.target.gender === "female" ? "女性" : data.context.target.gender === "male" ? "男性" : "両方"}`);
+      lines.push(`- **ターゲット年齢**: ${data.context.target?.ageGroups?.join(", ") || "未指定"}`);
+      lines.push(`- **性別**: ${data.context.target?.gender === "female" ? "女性" : data.context.target?.gender === "male" ? "男性" : "両方"}`);
       lines.push("");
     }
 
@@ -1157,33 +1201,100 @@ ${data.deepResearchResult.citations?.map(c => `- ${c.title}: ${c.url}`).join('\n
         onExportMarkdown={() => handleExport("markdown")}
       />
 
+      {/* Yahoo知恵袋結果 */}
+      {data.chiebukuroResults && data.chiebukuroResults.length > 0 && (
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">💬</span>
+              <h3 className="font-medium">Yahoo知恵袋から収集した悩み</h3>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                {data.chiebukuroResults.length}件
+              </span>
+            </div>
+            <ul className="space-y-2 max-h-64 overflow-y-auto">
+              {data.chiebukuroResults.map((q, i) => (
+                <li key={i} className="p-2 bg-muted/50 rounded text-sm">
+                  <div className="font-medium">{q.title}</div>
+                  {(q.depthScore || q.urgencyScore) && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      深刻度: {q.depthScore || "-"}/5 | 緊急度: {q.urgencyScore || "-"}/5
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Amazon書籍結果 */}
+      {data.amazonBooksResults && data.amazonBooksResults.length > 0 && (
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">📚</span>
+              <h3 className="font-medium">Amazon書籍から抽出したキーワード</h3>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                {data.amazonBooksResults.length}件
+              </span>
+            </div>
+            <ul className="space-y-2 max-h-64 overflow-y-auto">
+              {data.amazonBooksResults.map((book, i) => (
+                <li key={i} className="p-2 bg-muted/50 rounded text-sm">
+                  <div className="font-medium">{book.title}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {book.author && <span>{book.author} | </span>}
+                    {book.rating && <span>⭐ {book.rating}</span>}
+                    {book.reviewCount && <span> | {book.reviewCount}件のレビュー</span>}
+                  </div>
+                  {book.extractedKeywords && book.extractedKeywords.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {book.extractedKeywords.slice(0, 5).map((kw, j) => (
+                        <span key={j} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 収集した悩み一覧 */}
       {data.collectedPains.length > 0 ? (
-        <div className="space-y-4">
-          <div className="text-sm text-muted-foreground">
-            {data.collectedPains.length}件の悩みを収集しました
-          </div>
-          <Card>
-            <CardContent className="pt-4">
-              <ul className="space-y-2 max-h-80 overflow-y-auto">
-                {data.collectedPains.slice(0, 30).map((pain, i) => (
-                  <li key={i} className="text-sm flex gap-2">
-                    <span className="text-muted-foreground">{i + 1}.</span>
-                    <span>{pain}</span>
-                  </li>
-                ))}
-                {data.collectedPains.length > 30 && (
-                  <li className="text-sm text-muted-foreground">
-                    ...他{data.collectedPains.length - 30}件
-                  </li>
-                )}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">📋</span>
+              <h3 className="font-medium">収集した悩み・キーワード</h3>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                {data.collectedPains.length}件
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
+              {data.collectedPains.slice(0, 50).map((pain, i) => (
+                <span key={i} className="text-xs bg-muted px-2 py-1 rounded">
+                  {pain}
+                </span>
+              ))}
+              {data.collectedPains.length > 50 && (
+                <span className="text-xs text-muted-foreground">
+                  ...他{data.collectedPains.length - 50}件
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="text-center py-8 text-muted-foreground">
-          <p>「実行」をクリックして悩みを収集します</p>
-        </div>
+        !data.chiebukuroResults?.length && !data.amazonBooksResults?.length && (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>「実行」をクリックして悩みを収集します</p>
+          </div>
+        )
       )}
     </div>
   );
