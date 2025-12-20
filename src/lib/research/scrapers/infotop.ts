@@ -30,6 +30,22 @@ export interface InfotopScrapeOptions {
   useAI?: boolean;
 }
 
+/**
+ * スクレイピング結果の詳細情報
+ */
+export interface InfotopScrapeResult {
+  success: boolean;
+  products: InfotopResult[];
+  source: "firecrawl" | "crawl4ai" | "direct" | "cache" | "sample" | "error";
+  error?: string;
+  metadata?: {
+    scrapedAt: string;
+    processingTimeMs: number;
+    markdownLength: number;
+    retryCount: number;
+  };
+}
+
 export interface InfotopAnalysisResult {
   products: InfotopResult[];
   priceInsights?: {
@@ -41,94 +57,259 @@ export interface InfotopAnalysisResult {
 }
 
 /**
- * Infotopランキングを取得
+ * Infotopランキングを取得（詳細結果版）
  */
-export async function scrapeInfotopRanking(
+export async function scrapeInfotopRankingDetailed(
   options?: InfotopScrapeOptions
-): Promise<InfotopResult[]> {
+): Promise<InfotopScrapeResult> {
   const limit = options?.limit || 10;
   const genreId = options?.genre ? GENRE_IDS[options.genre] || "" : "";
+  const startTime = Date.now();
 
-  console.log("[infotop] Scraping ranking...", { genre: options?.genre, limit });
+  console.log("[infotop] ====== スクレイピング開始 ======");
+  console.log("[infotop] ジャンル:", options?.genre, "→ ID:", genreId);
+  console.log("[infotop] 取得件数:", limit);
 
   try {
     const url = genreId
       ? `${INFOTOP_RANKING_URL}?genre=${genreId}`
       : INFOTOP_RANKING_URL;
 
-    // 方法1: Firecrawl
+    console.log("[infotop] ターゲットURL:", url);
+
+    // Firecrawlでスクレイピング
     let markdown = "";
+    let scrapeSource: InfotopScrapeResult["source"] = "error";
+
+    // 方法1: Firecrawl (actions付き)
+    console.log("[infotop] Firecrawl APIを試行中...");
     try {
       const result = await scrapeUrl(url, {
         formats: ["markdown"],
-        onlyMainContent: false, // 全体を取得（重要）
-        waitFor: 3000,
+        onlyMainContent: false,
+        waitFor: 5000,
+        actions: [
+          { type: "wait", milliseconds: 3000 },
+          { type: "scroll", direction: "down" },
+          { type: "wait", milliseconds: 2000 },
+          { type: "scroll", direction: "down" },
+          { type: "wait", milliseconds: 2000 },
+        ],
+        location: { country: "jp", languages: ["ja"] },
       });
-      markdown = result.markdown || "";
-      console.log(`[infotop] Firecrawl scraped ${markdown.length} chars`);
+
+      console.log("[infotop] Firecrawl結果:", {
+        success: result.success,
+        markdownLength: result.markdown?.length || 0,
+        error: result.error,
+      });
+
+      if (result.success && result.markdown && result.markdown.length > 500) {
+        markdown = result.markdown;
+        scrapeSource = "firecrawl";
+        console.log("[infotop] Firecrawl成功！");
+      } else {
+        console.log("[infotop] Firecrawl: データ不十分");
+      }
     } catch (firecrawlError) {
-      console.warn("[infotop] Firecrawl failed:", firecrawlError);
+      console.error("[infotop] Firecrawl例外:", firecrawlError);
     }
 
     // 方法2: Crawl4AI（フォールバック）
     if (!markdown) {
+      console.log("[infotop] Crawl4AIを試行中...");
       try {
         const CRAWL4AI_SERVER_URL = process.env.CRAWL4AI_SERVER_URL || "http://localhost:8765";
+        console.log("[infotop] Crawl4AI URL:", CRAWL4AI_SERVER_URL);
+
         const response = await fetch(`${CRAWL4AI_SERVER_URL}/scrape`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             url,
-            wait_for_selector: ".ranking-list",
-            timeout: 10000,
+            wait_for_selector: ".ranking-list, .product-list, table",
+            timeout: 15000,
+            js_render: true,
           }),
         });
+
+        console.log("[infotop] Crawl4AIレスポンス:", response.status);
+
         if (response.ok) {
           const crawl4aiResult = await response.json();
-          markdown = crawl4aiResult.markdown || "";
-          console.log(`[infotop] Crawl4AI scraped ${markdown.length} chars`);
+          if (crawl4aiResult.markdown && crawl4aiResult.markdown.length > 500) {
+            markdown = crawl4aiResult.markdown;
+            scrapeSource = "crawl4ai";
+            console.log("[infotop] Crawl4AI成功！長さ:", markdown.length);
+          }
         }
       } catch (crawl4aiError) {
-        console.warn("[infotop] Crawl4AI failed:", crawl4aiError);
+        console.error("[infotop] Crawl4AI例外:", crawl4aiError);
       }
     }
 
+    // 方法3: フォールバックスクレイパー（直接fetch）
     if (!markdown) {
-      console.warn("[infotop] All scraping methods failed");
-      return getSimulatedRanking(options?.genre || "other", limit);
+      console.log("[infotop] 直接fetchを試行中...");
+      try {
+        const response = await fetch(url, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
+          },
+        });
+
+        console.log("[infotop] 直接fetchレスポンス:", response.status);
+
+        if (response.ok) {
+          const html = await response.text();
+          console.log("[infotop] HTML取得成功、長さ:", html.length);
+
+          // HTMLから簡易的にテキスト抽出
+          markdown = html
+            .replace(/<script[\s\S]*?<\/script>/gi, "")
+            .replace(/<style[\s\S]*?<\/style>/gi, "")
+            .replace(/<[^>]+>/g, "\n")
+            .replace(/\s+/g, " ")
+            .trim();
+
+          if (markdown.length > 500) {
+            scrapeSource = "direct";
+            console.log("[infotop] 直接fetch成功！");
+          }
+        }
+      } catch (directError) {
+        console.error("[infotop] 直接fetch例外:", directError);
+      }
     }
 
-    // AI分析でパース（常に使用）
-    const aiResult = await analyzeInfotopProductWithAI(markdown, options?.genre);
+    // スクレイピング結果の評価
+    console.log("[infotop] ====== スクレイピング結果 ======");
+    console.log("[infotop] ソース:", scrapeSource);
+    console.log("[infotop] マークダウン長:", markdown.length);
+    console.log("[infotop] 含まれるキーワード:", {
+      "ランキング": markdown.includes("ランキング"),
+      "位": markdown.includes("位"),
+      "円": markdown.includes("円"),
+      "商品": markdown.includes("商品"),
+    });
 
-    if (aiResult.products.length > 0) {
-      console.log(`[infotop] AI extracted ${aiResult.products.length} products`);
-      return aiResult.products.slice(0, limit).map((p, i) => ({
+    if (!markdown || markdown.length < 500) {
+      console.warn("[infotop] ⚠️ すべてのスクレイピング方法が失敗");
+      console.warn("[infotop] サンプルデータにフォールバック");
+      const elapsed = Date.now() - startTime;
+      return {
+        success: false,
+        products: getSimulatedRanking(options?.genre || "other", limit),
+        source: "sample",
+        error: "すべてのスクレイピング方法が失敗しました。APIキーとネットワーク接続を確認してください。",
+        metadata: {
+          scrapedAt: new Date().toISOString(),
+          processingTimeMs: elapsed,
+          markdownLength: markdown.length,
+          retryCount: 0,
+        },
+      };
+    }
+
+    // AI分析でパース
+    console.log("[infotop] AI分析を開始...");
+    const aiResult = await analyzeInfotopProductWithAI(markdown, options?.genre);
+    console.log("[infotop] AI分析結果:", {
+      productCount: aiResult.products?.length || 0,
+    });
+
+    if (aiResult.products && aiResult.products.length > 0) {
+      const elapsed = Date.now() - startTime;
+      console.log(`[infotop] ✅ 成功！${aiResult.products.length}件取得 (${elapsed}ms)`);
+
+      const products = aiResult.products.slice(0, limit).map((p, i) => ({
         rank: p.rank || i + 1,
         productName: p.name,
         genre: options?.genre || "",
         price: p.price,
         lpUrl: "", // LP URLは商品詳細ページから取得する
-        productPageUrl: p.productPageUrl, // 商品詳細ページURL
+        productPageUrl: p.productPageUrl,
         concept: p.concept,
         targetPain: p.targetPain ? [p.targetPain] : undefined,
         benefits: p.benefit ? [p.benefit] : undefined,
       }));
+
+      return {
+        success: true,
+        products,
+        source: scrapeSource,
+        metadata: {
+          scrapedAt: new Date().toISOString(),
+          processingTimeMs: elapsed,
+          markdownLength: markdown.length,
+          retryCount: 0,
+        },
+      };
     }
 
-    // 最終フォールバック（レガシーパース）
-    console.log("[infotop] AI analysis returned no products, trying legacy parse");
+    // レガシーパース
+    console.log("[infotop] AI分析失敗、レガシーパースを試行...");
     const legacyProducts = parseRankingMarkdown(markdown, limit);
 
     if (legacyProducts.length > 0) {
-      return legacyProducts;
+      console.log(`[infotop] レガシーパース成功: ${legacyProducts.length}件`);
+      const elapsed = Date.now() - startTime;
+      return {
+        success: true,
+        products: legacyProducts,
+        source: scrapeSource,
+        metadata: {
+          scrapedAt: new Date().toISOString(),
+          processingTimeMs: elapsed,
+          markdownLength: markdown.length,
+          retryCount: 0,
+        },
+      };
     }
 
-    return getSimulatedRanking(options?.genre || "other", limit);
+    console.warn("[infotop] すべてのパース方法が失敗、サンプルデータを返却");
+    const elapsed = Date.now() - startTime;
+    return {
+      success: false,
+      products: getSimulatedRanking(options?.genre || "other", limit),
+      source: "sample",
+      error: "パース失敗: ランキングデータを抽出できませんでした",
+      metadata: {
+        scrapedAt: new Date().toISOString(),
+        processingTimeMs: elapsed,
+        markdownLength: markdown.length,
+        retryCount: 0,
+      },
+    };
+
   } catch (err) {
-    console.error("[infotop] Error:", err);
-    return getSimulatedRanking(options?.genre || "other", limit);
+    console.error("[infotop] 致命的エラー:", err);
+    const elapsed = Date.now() - startTime;
+    return {
+      success: false,
+      products: getSimulatedRanking(options?.genre || "other", limit),
+      source: "error",
+      error: err instanceof Error ? err.message : "Unknown error",
+      metadata: {
+        scrapedAt: new Date().toISOString(),
+        processingTimeMs: elapsed,
+        markdownLength: 0,
+        retryCount: 0,
+      },
+    };
   }
+}
+
+/**
+ * Infotopランキングを取得（後方互換性のためのラッパー）
+ */
+export async function scrapeInfotopRanking(
+  options?: InfotopScrapeOptions
+): Promise<InfotopResult[]> {
+  const result = await scrapeInfotopRankingDetailed(options);
+  return result.products;
 }
 
 /**
@@ -484,166 +665,196 @@ function parseRankingMarkdown(
  * シミュレートされたランキングデータ（フォールバック用）
  */
 function getSimulatedRanking(genre: string, limit: number): InfotopResult[] {
+  // 注意: これはスクレイピング失敗時のサンプルデータです
+  // 実際のInfotopデータではありません
+  console.warn("[infotop] Using simulated data - scraping failed");
+  
   const templates: Record<string, InfotopResult[]> = {
     beauty: [
       {
         rank: 1,
-        productName: "【医師監修】美肌メソッド完全ガイド",
+        productName: "【サンプル】美肌メソッド完全ガイド",
         genre: "美容",
         price: 29800,
-        lpUrl: "https://example.com/beauty1",
+        lpUrl: "", // スクレイピング失敗時はURLなし
+        concept: "※サンプルデータ - 実際のInfotopスクレイピングに失敗しました",
       },
       {
         rank: 2,
-        productName: "自宅でできる本格エステケア講座",
+        productName: "【サンプル】エステケア講座",
         genre: "美容",
         price: 19800,
-        lpUrl: "https://example.com/beauty2",
+        lpUrl: "",
       },
       {
         rank: 3,
-        productName: "40代からのアンチエイジング大全",
+        productName: "【サンプル】アンチエイジング大全",
         genre: "美容",
         price: 24800,
-        lpUrl: "https://example.com/beauty3",
+        lpUrl: "",
       },
     ],
     health: [
       {
         rank: 1,
-        productName: "腸活ダイエット完全マニュアル",
+        productName: "【サンプル】腸活ダイエットマニュアル",
         genre: "健康",
         price: 19800,
-        lpUrl: "https://example.com/health1",
+        lpUrl: "",
       },
       {
         rank: 2,
-        productName: "自律神経改善プログラム",
+        productName: "【サンプル】自律神経改善プログラム",
         genre: "健康",
         price: 29800,
-        lpUrl: "https://example.com/health2",
+        lpUrl: "",
       },
       {
         rank: 3,
-        productName: "睡眠の質を高める7つの習慣",
+        productName: "【サンプル】睡眠の質を高める習慣",
         genre: "健康",
         price: 14800,
-        lpUrl: "https://example.com/health3",
+        lpUrl: "",
       },
     ],
     business: [
       {
         rank: 1,
-        productName: "副業で月30万円稼ぐロードマップ",
+        productName: "【サンプル】副業ロードマップ",
         genre: "ビジネス",
         price: 49800,
-        lpUrl: "https://example.com/biz1",
+        lpUrl: "",
       },
       {
         rank: 2,
-        productName: "ゼロからのWebマーケティング講座",
+        productName: "【サンプル】Webマーケティング講座",
         genre: "ビジネス",
         price: 39800,
-        lpUrl: "https://example.com/biz2",
+        lpUrl: "",
       },
       {
         rank: 3,
-        productName: "コンテンツビジネス成功の法則",
+        productName: "【サンプル】コンテンツビジネス成功法則",
         genre: "ビジネス",
         price: 34800,
-        lpUrl: "https://example.com/biz3",
+        lpUrl: "",
       },
     ],
     investment: [
       {
         rank: 1,
-        productName: "FX自動売買システム構築講座",
+        productName: "【サンプル】FX自動売買講座",
         genre: "投資",
         price: 98000,
-        lpUrl: "https://example.com/fx1",
+        lpUrl: "",
       },
       {
         rank: 2,
-        productName: "仮想通貨投資の完全攻略ガイド",
+        productName: "【サンプル】仮想通貨投資ガイド",
         genre: "投資",
         price: 49800,
-        lpUrl: "https://example.com/crypto1",
+        lpUrl: "",
       },
       {
         rank: 3,
-        productName: "株式投資初心者のための教科書",
+        productName: "【サンプル】株式投資教科書",
         genre: "投資",
         price: 29800,
-        lpUrl: "https://example.com/stock1",
+        lpUrl: "",
       },
     ],
     education: [
       {
         rank: 1,
-        productName: "英語速習マスター講座",
+        productName: "【サンプル】英語速習マスター",
         genre: "教育",
         price: 39800,
-        lpUrl: "https://example.com/edu1",
+        lpUrl: "",
       },
       {
         rank: 2,
-        productName: "プログラミング独学の完全ロードマップ",
+        productName: "【サンプル】プログラミング独学",
         genre: "教育",
         price: 29800,
-        lpUrl: "https://example.com/edu2",
+        lpUrl: "",
       },
       {
         rank: 3,
-        productName: "記憶力向上トレーニング",
+        productName: "【サンプル】記憶力向上トレーニング",
         genre: "教育",
         price: 19800,
-        lpUrl: "https://example.com/edu3",
+        lpUrl: "",
       },
     ],
     romance: [
       {
         rank: 1,
-        productName: "モテる男の会話術",
+        productName: "【サンプル】会話術",
         genre: "恋愛",
         price: 24800,
-        lpUrl: "https://example.com/love1",
+        lpUrl: "",
       },
       {
         rank: 2,
-        productName: "婚活成功の秘訣",
+        productName: "【サンプル】婚活成功の秘訣",
         genre: "恋愛",
         price: 29800,
-        lpUrl: "https://example.com/love2",
+        lpUrl: "",
       },
       {
         rank: 3,
-        productName: "復縁マニュアル決定版",
+        productName: "【サンプル】復縁マニュアル",
         genre: "恋愛",
         price: 19800,
-        lpUrl: "https://example.com/love3",
+        lpUrl: "",
+      },
+    ],
+    spiritual: [
+      {
+        rank: 1,
+        productName: "【サンプル】スピリチュアル講座",
+        genre: "スピリチュアル",
+        price: 29800,
+        lpUrl: "",
+        concept: "※サンプルデータ - 実際のInfotopスクレイピングに失敗しました",
+      },
+      {
+        rank: 2,
+        productName: "【サンプル】占い入門",
+        genre: "スピリチュアル",
+        price: 19800,
+        lpUrl: "",
+      },
+      {
+        rank: 3,
+        productName: "【サンプル】手相占いマスター",
+        genre: "スピリチュアル",
+        price: 24800,
+        lpUrl: "",
       },
     ],
     other: [
       {
         rank: 1,
-        productName: "人気商品サンプル1",
+        productName: "【サンプル】人気商品1",
         genre: "その他",
         price: 19800,
-        lpUrl: "https://example.com/other1",
+        lpUrl: "",
+        concept: "※サンプルデータ - 実際のInfotopスクレイピングに失敗しました",
       },
       {
         rank: 2,
-        productName: "人気商品サンプル2",
+        productName: "【サンプル】人気商品2",
         genre: "その他",
         price: 24800,
-        lpUrl: "https://example.com/other2",
+        lpUrl: "",
       },
       {
         rank: 3,
-        productName: "人気商品サンプル3",
+        productName: "【サンプル】人気商品3",
         genre: "その他",
         price: 29800,
-        lpUrl: "https://example.com/other3",
+        lpUrl: "",
       },
     ],
   };

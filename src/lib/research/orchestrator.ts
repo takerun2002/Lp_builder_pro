@@ -8,7 +8,15 @@
 import { getGeminiClient } from "@/lib/ai/gemini";
 import { hybridGenerate, getHybridStats } from "@/lib/ai/hybrid-knowledge";
 import { getStorage } from "@/lib/storage/hybrid-storage";
-import { scrapeInfotopRanking, scrapeInfotopRankingWithAnalysis, extractPatterns } from "./scrapers/infotop";
+import { scrapeInfotopRankingDetailed, scrapeInfotopRankingWithAnalysis, extractPatterns, type InfotopScrapeResult } from "./scrapers/infotop";
+import fs from "fs";
+
+const DEBUG_LOG_PATH = "/Users/okajima/Lp_builder_pro/.cursor/debug.log";
+function debugLog(data: object) {
+  try {
+    fs.appendFileSync(DEBUG_LOG_PATH, JSON.stringify({ ...data, timestamp: Date.now() }) + "\n");
+  } catch {}
+}
 import { searchCompetitorLPs, extractCommonPatterns, type EnhancedCompetitorLPResult } from "./scrapers/competitor";
 import { analyzeCompetitorAds, type MetaAdAnalysis } from "./scrapers/meta-ads";
 import { analyzeChiebukuro, type ChiebukuroAnalysis } from "./scrapers/yahoo-chiebukuro";
@@ -54,6 +62,9 @@ export interface EnhancedResearchResult extends ResearchResult {
     sweetSpot: string;
   };
   infotopConceptPatterns?: string[];
+  // Infotopスクレイピング詳細
+  infotopError?: string;
+  infotopSource?: InfotopScrapeResult["source"];
   // 新規スクレイパー結果
   chiebukuroAnalysis?: ChiebukuroAnalysis;
   amazonBooksAnalysis?: AmazonBookAnalysis;
@@ -104,6 +115,9 @@ export async function runResearch(
     if (context.searchConfig.sources.includes("infotop")) {
       dataCollectionPromises.push(
         (async () => {
+          // #region agent log
+          debugLog({ location: "orchestrator:infotop:start", message: "Starting Infotop scrape", data: { genre: context.genre, useAI }, sessionId: "debug-session", hypothesisId: "H3,H4" });
+          // #endregion
           updateProgress("infotop", "running");
           try {
             if (useAI) {
@@ -116,15 +130,42 @@ export async function runResearch(
               result.infotopResults = analysisResult.products;
               result.infotopPriceInsights = analysisResult.priceInsights;
               result.infotopConceptPatterns = analysisResult.conceptPatterns;
+              // #region agent log
+              debugLog({ location: "orchestrator:infotop:aiComplete", message: "Infotop AI analysis complete", data: { productCount: analysisResult.products?.length }, sessionId: "debug-session", hypothesisId: "H4" });
+              // #endregion
+              updateProgress("infotop", "completed");
             } else {
-              result.infotopResults = await scrapeInfotopRanking({
+              // 詳細結果版を使用
+              const infotopResult = await scrapeInfotopRankingDetailed({
                 genre: context.genre,
                 limit: 10,
               });
+
+              result.infotopResults = infotopResult.products;
+              result.infotopSource = infotopResult.source;
+
+              if (infotopResult.success) {
+                console.log(`[orchestrator] Infotop成功: ${infotopResult.products.length}件 (${infotopResult.source})`);
+                // #region agent log
+                debugLog({ location: "orchestrator:infotop:basicComplete", message: "Infotop basic scrape complete", data: { productCount: infotopResult.products?.length, source: infotopResult.source }, sessionId: "debug-session", hypothesisId: "H4" });
+                // #endregion
+                updateProgress("infotop", "completed");
+              } else {
+                console.error(`[orchestrator] Infotop失敗: ${infotopResult.error}`);
+                result.infotopError = infotopResult.error;
+                // #region agent log
+                debugLog({ location: "orchestrator:infotop:fallback", message: "Infotop using sample data", data: { error: infotopResult.error, source: infotopResult.source }, sessionId: "debug-session", hypothesisId: "H4" });
+                // #endregion
+                // サンプルデータでも継続（failedにはしない）
+                updateProgress("infotop", "completed");
+              }
             }
-            updateProgress("infotop", "completed");
           } catch (err) {
+            // #region agent log
+            debugLog({ location: "orchestrator:infotop:error", message: "Infotop scrape failed", data: { error: err instanceof Error ? err.message : String(err), stack: err instanceof Error ? err.stack?.slice(0, 300) : undefined }, sessionId: "debug-session", hypothesisId: "H4" });
+            // #endregion
             console.error("[orchestrator] Infotop error:", err);
+            result.infotopError = err instanceof Error ? err.message : "Unknown error";
             updateProgress("infotop", "failed");
           }
         })()
@@ -629,7 +670,6 @@ async function runDeepResearch(
  */
 function buildDeepResearchPrompt(context: ResearchContext): string {
   const genreLabel = getGenreLabel(context.genre);
-  const moodLabels = context.toneManner.moods.map(getMoodLabel).join(", ");
 
   return `あなたはLP（ランディングページ）とセールスコピーの専門家です。
 以下の条件に基づいて、効果的なLP構成とコピー戦略をリサーチしてください。
@@ -645,7 +685,6 @@ function buildDeepResearchPrompt(context: ResearchContext): string {
   }
 - **悩み・課題**: ${context.target.problems || "未指定"}
 - **理想の状態**: ${context.target.desires || "未指定"}
-- **雰囲気・トンマナ**: ${moodLabels}
 
 ${context.freeText ? `## 追加情報\n${context.freeText}` : ""}
 
@@ -1020,7 +1059,6 @@ ${metaAdsSection}${chiebukuroSection}${amazonBooksSection}${youtubeSection}
 - ターゲット: ${context.target.ageGroups.join(", ")}歳代
 - 悩み: ${context.target.problems}
 - 理想: ${context.target.desires}
-- トンマナ: ${context.toneManner.moods.map(getMoodLabel).join(", ")}
 
 ## 出力形式
 \`\`\`json
@@ -1128,7 +1166,7 @@ function normalizeProposals(
  */
 function getDefaultProposals(context: ResearchContext): ResearchProposals {
   const isFemale = context.target.gender !== "male";
-  const isLuxury = context.toneManner.moods.includes("luxury");
+  const isLuxury = context.toneManner?.moods?.includes("luxury") ?? false;
 
   return {
     structure: {
@@ -1270,16 +1308,5 @@ function getGenreLabel(genre: string): string {
   return labels[genre] || genre;
 }
 
-function getMoodLabel(mood: string): string {
-  const labels: Record<string, string> = {
-    luxury: "高級感",
-    casual: "カジュアル",
-    trust: "信頼感",
-    friendly: "親しみ",
-    professional: "専門的",
-    emotional: "エモーショナル",
-  };
-  return labels[mood] || mood;
-}
 
 

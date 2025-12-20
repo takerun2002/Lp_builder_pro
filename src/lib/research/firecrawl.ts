@@ -29,15 +29,39 @@ export interface FirecrawlCrawlResult {
 }
 
 /**
+ * Firecrawlアクション定義
+ */
+export interface FirecrawlAction {
+  type: "wait" | "screenshot" | "scroll" | "scrape" | "click" | "write" | "press" | "executeJavascript";
+  milliseconds?: number;
+  direction?: "up" | "down";
+  selector?: string;
+  text?: string;
+  key?: string;
+  script?: string;
+}
+
+/**
+ * Firecrawlスクレイプオプション
+ */
+export interface FirecrawlScrapeOptions {
+  formats?: ("markdown" | "html" | "screenshot" | "links")[];
+  onlyMainContent?: boolean;
+  waitFor?: number;
+  actions?: FirecrawlAction[];
+  location?: { country: string; languages?: string[] };
+  mobile?: boolean;
+  timeout?: number;
+  includeTags?: string[];
+  excludeTags?: string[];
+}
+
+/**
  * 単一ページをスクレイプ
  */
 export async function scrapeUrl(
   url: string,
-  options?: {
-    formats?: ("markdown" | "html" | "screenshot")[];
-    onlyMainContent?: boolean;
-    waitFor?: number;
-  }
+  options?: FirecrawlScrapeOptions
 ): Promise<FirecrawlScrapeResult> {
   // 環境変数 → ストレージの順でAPIキーを取得
   const apiKey = process.env.FIRECRAWL_API_KEY || await getApiKey("firecrawl");
@@ -60,6 +84,12 @@ export async function scrapeUrl(
         formats: options?.formats || ["markdown"],
         onlyMainContent: options?.onlyMainContent ?? true,
         waitFor: options?.waitFor || 1000,
+        ...(options?.actions && { actions: options.actions }),
+        ...(options?.location && { location: options.location }),
+        ...(options?.mobile && { mobile: options.mobile }),
+        ...(options?.timeout && { timeout: options.timeout }),
+        ...(options?.includeTags && { includeTags: options.includeTags }),
+        ...(options?.excludeTags && { excludeTags: options.excludeTags }),
       }),
     });
 

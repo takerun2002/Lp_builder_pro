@@ -36,6 +36,7 @@ import {
   type DataSource,
   type ResearchPresetId,
   type DeepResearchResult,
+  type InfotopResult,
   GENRE_LABELS,
   getDefaultSources,
 } from "@/lib/research/types";
@@ -343,33 +344,93 @@ export default function ResearchPage() {
     await wizard.runStep("infotop_analysis", async () => {
       addLog("info", "Infotopランキングを取得中...");
 
-      const res = await fetch("/api/research", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/398ecfa5-24d8-4a9e-9fa7-c8449daece75',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:runInfotopStep',message:'Starting Infotop step',data:{hasContext:!!data.context,contextGenre:data.context?.genre,contextSubGenre:data.context?.subGenre},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
+      // #endregion
+
+      try {
+        const requestBody = {
           context: data.context,
           sources: ["infotop"],
           step: "infotop",
-        }),
-      });
-      const result = await res.json();
+        };
 
-      if (!result.success) {
-        addLog("error", `エラー: ${result.error}`);
-        throw new Error(result.error);
-      }
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/398ecfa5-24d8-4a9e-9fa7-c8449daece75',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:runInfotopStep:beforeFetch',message:'Request body prepared',data:{requestBody:JSON.stringify(requestBody).slice(0,500)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H2'})}).catch(()=>{});
+        // #endregion
 
-      const products = result.infotopResults || [];
-      addLog("success", `${products.length}件の商品を発見しました`, { count: products.length });
-
-      products.forEach((p: InfotopProduct, i: number) => {
-        addLog("info", `${i + 1}. ${p.productName} (¥${p.price?.toLocaleString() || "?"})`, {
-          url: p.lpUrl || undefined,
+        const res = await fetch("/api/research", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
         });
-      });
 
-      setData((prev) => ({ ...prev, infotopProducts: products }));
-      return products;
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/398ecfa5-24d8-4a9e-9fa7-c8449daece75',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:runInfotopStep:afterFetch',message:'Fetch response received',data:{status:res.status,ok:res.ok,statusText:res.statusText},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H3'})}).catch(()=>{});
+        // #endregion
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          // #region agent log
+          fetch('http://127.0.0.1:7244/ingest/398ecfa5-24d8-4a9e-9fa7-c8449daece75',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:runInfotopStep:httpError',message:'HTTP error response',data:{status:res.status,errorText:errorText?.slice(0,500)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3,H4'})}).catch(()=>{});
+          // #endregion
+          addLog("error", `HTTPエラー (${res.status}): ${errorText || "Unknown error"}`);
+          throw new Error(`HTTP ${res.status}: ${errorText || "Unknown error"}`);
+        }
+
+        const result = await res.json();
+
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/398ecfa5-24d8-4a9e-9fa7-c8449daece75',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:runInfotopStep:parseResult',message:'Response parsed',data:{resultOk:result.ok,hasResult:!!result.result,infotopCount:result.result?.infotopResults?.length,resultKeys:Object.keys(result||{})},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H5'})}).catch(()=>{});
+        // #endregion
+
+        // /api/researchは { ok: true, result: ResearchResult } 形式で返す
+        if (!result.ok) {
+          const errorMessage = result.error || "Infotop分析に失敗しました";
+          // #region agent log
+          fetch('http://127.0.0.1:7244/ingest/398ecfa5-24d8-4a9e-9fa7-c8449daece75',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:runInfotopStep:resultNotOk',message:'API returned not ok',data:{error:errorMessage,resultKeys:Object.keys(result||{})},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3,H5'})}).catch(()=>{});
+          // #endregion
+          addLog("error", `エラー: ${errorMessage}`);
+          throw new Error(errorMessage);
+        }
+
+        // result.result.infotopResults から取得
+        const infotopResults = result.result?.infotopResults || [];
+        
+        // InfotopResult → InfotopProduct にマッピング
+        const products: InfotopProduct[] = infotopResults.map((r: InfotopResult) => ({
+          rank: r.rank || 0,
+          productName: r.productName || "",
+          price: r.price || 0,
+          lpUrl: r.lpUrl || "",
+          salesCopy: r.salesCopy,
+          targetPain: r.targetPain || [],
+          benefits: r.benefits || [],
+          concept: r.concept,
+        }));
+
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/398ecfa5-24d8-4a9e-9fa7-c8449daece75',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:runInfotopStep:success',message:'Products mapped successfully',data:{productCount:products.length,firstProduct:products[0]?.productName},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H5'})}).catch(()=>{});
+        // #endregion
+
+        addLog("success", `${products.length}件の商品を発見しました`, { count: products.length });
+
+        products.forEach((p: InfotopProduct, i: number) => {
+          addLog("info", `${i + 1}. ${p.productName} (¥${p.price?.toLocaleString() || "?"})`, {
+            url: p.lpUrl || undefined,
+          });
+        });
+
+        setData((prev) => ({ ...prev, infotopProducts: products }));
+        return products;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err) || "Unknown error";
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/398ecfa5-24d8-4a9e-9fa7-c8449daece75',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:runInfotopStep:catch',message:'Exception caught',data:{errorMessage,errorType:err?.constructor?.name},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1,H3,H4'})}).catch(()=>{});
+        // #endregion
+        addLog("error", `Infotop分析エラー: ${errorMessage}`);
+        throw err;
+      }
     });
 
     setIsRunning(false);
