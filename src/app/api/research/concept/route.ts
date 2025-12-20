@@ -80,6 +80,10 @@ export async function POST(request: NextRequest) {
       concepts: result.concepts,
       insights: result.insights,
       keywordSuggestions: result.keywordSuggestions,
+      // ストーリー型情報
+      recommendedStoryType: result.recommendedStoryType,
+      storyTypeLabel: result.storyTypeLabel,
+      storyTypeDescription: result.storyTypeDescription,
     });
   } catch (error) {
     console.error("[concept] API Error:", error);

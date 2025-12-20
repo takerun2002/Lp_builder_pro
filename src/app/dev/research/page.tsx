@@ -32,19 +32,22 @@ import { ResearchSourceSelector } from "@/components/research/ResearchSourceSele
 import {
   type ResearchContext,
   type Genre,
-  type Mood,
   type AgeGroup,
   type DataSource,
   type ResearchPresetId,
+  type DeepResearchResult,
   GENRE_LABELS,
-  MOOD_LABELS,
   getDefaultSources,
 } from "@/lib/research/types";
 import type { CompetitorAnalysis } from "@/lib/research/analyzers/concept-extractor";
 import type { ClassifiedPainPoint } from "@/lib/research/analyzers/pain-classifier";
 import type { KeywordRankingResult } from "@/lib/research/analyzers/keyword-ranker";
 import type { ConceptCandidate } from "@/lib/research/concept-generator";
-import { Download, Copy, CheckCircle2, ChevronDown, ChevronUp, Sparkles, User, Zap, FileText, Coins, TrendingUp } from "lucide-react";
+import {
+  Download, Copy, CheckCircle2, ChevronDown, ChevronUp, Sparkles, User, Zap,
+  FileText, Coins, TrendingUp, Brain, Lightbulb, Link as LinkIcon, BarChart3, Loader2,
+  ExternalLink, SkipForward
+} from "lucide-react";
 import { ResearchProgressLog, DiscoveredUrls, type LogEntry } from "@/components/research/ResearchProgressLog";
 
 // ============================================
@@ -78,12 +81,26 @@ const LF8_OPTIONS: { id: LF8Type; label: string; description: string; icon: stri
 
 interface ResearchData {
   context: ResearchContext | null;
-  infotopProducts: InfotopProduct[];  // 新: Infotop商品
+  infotopProducts: InfotopProduct[];  // Infotop商品
   competitors: CompetitorAnalysis[];
   painPoints: ClassifiedPainPoint[];
-  collectedPains: string[];            // 新: 収集した悩み（知恵袋+Amazon）
+  collectedPains: string[];            // 収集した悩み（知恵袋+Amazon）
   keywords: KeywordRankingResult | null;
   concepts: ConceptCandidate[];
+  deepResearchResult?: DeepResearchResult;  // Deep Research結果
+  // ストーリー型情報
+  recommendedStoryType?: string;
+  storyTypeLabel?: string;
+  storyTypeDescription?: string;
+}
+
+// Deep Research進捗状態
+interface DeepResearchProgress {
+  status: "idle" | "starting" | "polling" | "completed" | "failed";
+  attempt: number;
+  maxAttempts: number;
+  estimatedTimeRemaining: number;
+  message: string;
 }
 
 // Infotop商品の簡易型
@@ -174,8 +191,7 @@ export default function ResearchPage() {
   const [n1Profile, setN1Profile] = useState(""); // 任意：N1情報
   const [selectedLF8, setSelectedLF8] = useState<LF8Type[]>([]); // 任意：LF8選択
   
-  // トンマナ・参考情報
-  const [moods, setMoods] = useState<Mood[]>(["trust", "professional"]);
+  // 参考情報
   const [referenceUrls, setReferenceUrls] = useState("");
   const [selectedSources, setSelectedSources] = useState<DataSource[]>(getDefaultSources());
 
@@ -201,6 +217,15 @@ export default function ResearchPage() {
 
   // コスト統計
   const [costStats, setCostStats] = useState<HybridCostStats | null>(null);
+
+  // Deep Research進捗
+  const [deepResearchProgress, setDeepResearchProgress] = useState<DeepResearchProgress>({
+    status: "idle",
+    attempt: 0,
+    maxAttempts: 30,
+    estimatedTimeRemaining: 300,
+    message: "",
+  });
   
   // ログ追加関数
   const addLog = useCallback((
@@ -253,9 +278,6 @@ export default function ResearchPage() {
         problems: problems || undefined, // 任意
         desires: desires || undefined, // 任意
       },
-      toneManner: {
-        moods,
-      },
       searchConfig: {
         regions: ["japan"],
         period: "6months",
@@ -267,7 +289,7 @@ export default function ResearchPage() {
       // 拡張情報（任意）
       freeText: n1Profile || undefined, // N1情報をfreeTextとして渡す
     };
-  }, [genre, subGenre, ageGroups, gender, problems, desires, moods, referenceUrls, selectedSources, n1Profile]);
+  }, [genre, subGenre, ageGroups, gender, problems, desires, referenceUrls, selectedSources, n1Profile]);
 
   // 初期化ステップ完了
   const handleInitComplete = () => {
@@ -298,6 +320,9 @@ export default function ResearchPage() {
           break;
         case "keyword_ranking":
           await runKeywordRankingStep();
+          break;
+        case "deep_research":
+          await runDeepResearchStep();
           break;
         case "concept_generation":
           await runConceptGenerationStep();
@@ -589,14 +614,145 @@ export default function ResearchPage() {
     wizard.nextStep();
   };
 
+  // Deep Researchステップ（PRO機能）
+  const runDeepResearchStep = async () => {
+    if (!data.context) return;
+
+    setIsRunning(true);
+    setDeepResearchProgress({
+      status: "starting",
+      attempt: 0,
+      maxAttempts: 30,
+      estimatedTimeRemaining: 300,
+      message: "Deep Research Agent を起動しています...",
+    });
+
+    addLog("progress", "🔍 Deep Research Agent を起動しています...");
+    addLog("info", "※ 詳細な市場分析には3〜5分かかる場合があります");
+
+    await wizard.runStep("deep_research", async () => {
+      setDeepResearchProgress(prev => ({
+        ...prev,
+        status: "polling",
+        message: "Google検索と市場分析を実行中...",
+      }));
+
+      // 進捗表示用のインターバル
+      const progressInterval = setInterval(() => {
+        setDeepResearchProgress(prev => {
+          const newAttempt = prev.attempt + 1;
+          const remaining = Math.max(0, (prev.maxAttempts - newAttempt) * 10);
+          return {
+            ...prev,
+            attempt: newAttempt,
+            estimatedTimeRemaining: remaining,
+            message: getProgressMessage(newAttempt),
+          };
+        });
+      }, 10000);
+
+      try {
+        const res = await fetch("/api/research/deep", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ context: data.context }),
+        });
+
+        clearInterval(progressInterval);
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || "Deep Research failed");
+        }
+
+        const { result, elapsedMs } = await res.json();
+
+        setDeepResearchProgress({
+          status: "completed",
+          attempt: 0,
+          maxAttempts: 30,
+          estimatedTimeRemaining: 0,
+          message: "完了",
+        });
+
+        setData((prev) => ({
+          ...prev,
+          deepResearchResult: result,
+        }));
+
+        addLog("success", `Deep Research 完了（${Math.round((elapsedMs || 0) / 1000)}秒）`);
+
+        if (result.trendReport) {
+          addLog("info", `📊 トレンドレポート: ${result.trendReport.slice(0, 100)}...`);
+        }
+        if (result.recommendations?.length > 0) {
+          addLog("info", `💡 ${result.recommendations.length}件の推奨事項を取得`);
+        }
+        if (result.citations?.length > 0) {
+          addLog("info", `🔗 ${result.citations.length}件の参考URLを取得`);
+        }
+
+        return result;
+      } catch (err) {
+        clearInterval(progressInterval);
+        setDeepResearchProgress({
+          status: "failed",
+          attempt: 0,
+          maxAttempts: 30,
+          estimatedTimeRemaining: 0,
+          message: err instanceof Error ? err.message : "エラー",
+        });
+
+        addLog("error", `Deep Research エラー: ${err instanceof Error ? err.message : "Unknown"}`);
+        throw err;
+      }
+    });
+
+    setIsRunning(false);
+    wizard.nextStep();
+  };
+
+  // Deep Research進捗メッセージ
+  const getProgressMessage = (attempt: number): string => {
+    if (attempt < 3) return "🔍 Googleで最新情報を検索中...";
+    if (attempt < 6) return "📊 市場データを収集中...";
+    if (attempt < 10) return "🧠 競合分析を実行中...";
+    if (attempt < 15) return "📈 トレンドレポートを生成中...";
+    if (attempt < 20) return "💡 心理学的インサイトを抽出中...";
+    return "📝 最終レポートを作成中...";
+  };
+
   // コンセプト生成ステップ
   const runConceptGenerationStep = async () => {
     setIsRunning(true);
     addLog("progress", "💡 コンセプト生成を開始します...");
-    
+
+    // Deep Research結果があれば、コンセプト生成に活用
+    const deepResearchInsights = data.deepResearchResult ? `
+## Deep Research からの洞察
+
+### トレンドレポート
+${data.deepResearchResult.trendReport}
+
+### 市場分析
+${data.deepResearchResult.marketAnalysis}
+
+### 心理学的インサイト
+${data.deepResearchResult.psychologyInsights}
+
+### 推奨事項
+${data.deepResearchResult.recommendations?.map((r, i) => `${i + 1}. ${r}`).join('\n') || 'なし'}
+
+### 参考URL
+${data.deepResearchResult.citations?.map(c => `- ${c.title}: ${c.url}`).join('\n') || 'なし'}
+` : '';
+
     await wizard.runStep("concept_generation", async () => {
       addLog("info", "AIがコンセプト案を生成中...");
-      
+      if (data.deepResearchResult) {
+        addLog("info", "💡 Deep Research結果を活用してコンセプトを強化中...");
+      }
+
       const res = await fetch("/api/research/concept", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -615,6 +771,7 @@ export default function ResearchPage() {
               genre: data.context?.genre,
               targetGender: data.context?.target.gender,
             },
+            deepResearchInsights,  // Deep Research結果を追加
           },
           options: {
             count: 5,
@@ -631,8 +788,19 @@ export default function ResearchPage() {
       result.concepts.forEach((c: ConceptCandidate, i: number) => {
         addLog("info", `コンセプト${i + 1}: ${c.headline}`);
       });
-      
-      setData((prev) => ({ ...prev, concepts: result.concepts }));
+
+      // ストーリー型情報をログに追加
+      if (result.recommendedStoryType) {
+        addLog("info", `📖 推奨ストーリー型: ${result.storyTypeLabel || result.recommendedStoryType}`);
+      }
+
+      setData((prev) => ({
+        ...prev,
+        concepts: result.concepts,
+        recommendedStoryType: result.recommendedStoryType,
+        storyTypeLabel: result.storyTypeLabel,
+        storyTypeDescription: result.storyTypeDescription,
+      }));
       setIsRunning(false);
       return result.concepts;
     });
@@ -703,6 +871,43 @@ export default function ResearchPage() {
         lines.push(`| ${i + 1} | ${kw.keyword} | ${kw.scores.overall.toFixed(1)} |`);
       });
       lines.push("");
+    }
+
+    // Deep Research結果
+    if (data.deepResearchResult) {
+      lines.push("## 🧠 Deep Research 結果", "");
+
+      if (data.deepResearchResult.trendReport) {
+        lines.push("### トレンドレポート", "");
+        lines.push(data.deepResearchResult.trendReport, "");
+      }
+
+      if (data.deepResearchResult.marketAnalysis) {
+        lines.push("### 市場分析", "");
+        lines.push(data.deepResearchResult.marketAnalysis, "");
+      }
+
+      if (data.deepResearchResult.psychologyInsights) {
+        lines.push("### 心理学的インサイト", "");
+        lines.push(data.deepResearchResult.psychologyInsights, "");
+      }
+
+      if (data.deepResearchResult.recommendations?.length) {
+        lines.push("### 推奨事項", "");
+        data.deepResearchResult.recommendations.forEach((rec, i) => {
+          lines.push(`${i + 1}. ${rec}`);
+        });
+        lines.push("");
+      }
+
+      if (data.deepResearchResult.citations?.length) {
+        lines.push("### 参考URL", "");
+        data.deepResearchResult.citations.forEach((c) => {
+          lines.push(`- [${c.title}](${c.url})`);
+          if (c.snippet) lines.push(`  > ${c.snippet}`);
+        });
+        lines.push("");
+      }
     }
 
     // コンセプト
@@ -801,6 +1006,10 @@ export default function ResearchPage() {
     switch (wizard.currentStep) {
       case "init":
         return renderInitStep();
+      case "infotop_analysis":
+        return renderInfotopStep();
+      case "pain_collection":
+        return renderPainCollectionStep();
       case "competitor_search":
       case "competitor_analysis":
         return renderCompetitorStep();
@@ -808,6 +1017,8 @@ export default function ResearchPage() {
         return renderPainStep();
       case "keyword_ranking":
         return renderKeywordStep();
+      case "deep_research":
+        return renderDeepResearchStep();
       case "concept_generation":
         return renderConceptStep();
       case "complete":
@@ -816,6 +1027,609 @@ export default function ResearchPage() {
         return null;
     }
   };
+
+  // Infotop分析ステップUI
+  const renderInfotopStep = () => (
+    <div className="space-y-4">
+      <ResearchProgressLog
+        logs={logs}
+        isRunning={isRunning}
+        onExportMarkdown={() => handleExport("markdown")}
+      />
+
+      {data.infotopProducts.length > 0 ? (
+        <div className="space-y-4">
+          <div className="text-sm text-muted-foreground">
+            {data.infotopProducts.length}件の商品を発見しました
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {data.infotopProducts.map((product, i) => (
+              <Card key={i} className="overflow-hidden">
+                <CardContent className="pt-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-bold bg-primary/10 text-primary px-2 py-0.5 rounded">
+                          #{product.rank}
+                        </span>
+                        <span className="text-sm font-semibold text-green-600">
+                          ¥{product.price?.toLocaleString() || "?"}
+                        </span>
+                      </div>
+                      <h4 className="font-medium text-sm line-clamp-2">{product.productName}</h4>
+                      {product.concept && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {product.concept}
+                        </p>
+                      )}
+                    </div>
+                    {product.lpUrl && (
+                      <a
+                        href={product.lpUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:text-primary/80"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-8 text-muted-foreground">
+          <p>「実行」をクリックしてInfotop分析を開始します</p>
+        </div>
+      )}
+    </div>
+  );
+
+  // 悩み収集ステップUI
+  const renderPainCollectionStep = () => (
+    <div className="space-y-4">
+      <ResearchProgressLog
+        logs={logs}
+        isRunning={isRunning}
+        onExportMarkdown={() => handleExport("markdown")}
+      />
+
+      {data.collectedPains.length > 0 ? (
+        <div className="space-y-4">
+          <div className="text-sm text-muted-foreground">
+            {data.collectedPains.length}件の悩みを収集しました
+          </div>
+          <Card>
+            <CardContent className="pt-4">
+              <ul className="space-y-2 max-h-80 overflow-y-auto">
+                {data.collectedPains.slice(0, 30).map((pain, i) => (
+                  <li key={i} className="text-sm flex gap-2">
+                    <span className="text-muted-foreground">{i + 1}.</span>
+                    <span>{pain}</span>
+                  </li>
+                ))}
+                {data.collectedPains.length > 30 && (
+                  <li className="text-sm text-muted-foreground">
+                    ...他{data.collectedPains.length - 30}件
+                  </li>
+                )}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="text-center py-8 text-muted-foreground">
+          <p>「実行」をクリックして悩みを収集します</p>
+        </div>
+      )}
+    </div>
+  );
+
+  // Deep ResearchステップUI（PRO機能）
+  const renderDeepResearchStep = () => (
+    <div className="space-y-6">
+      {/* 進捗表示 */}
+      {deepResearchProgress.status !== "idle" && deepResearchProgress.status !== "completed" && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="pt-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                <div className="flex-1">
+                  <div className="font-medium">{deepResearchProgress.message}</div>
+                  <div className="text-sm text-muted-foreground">
+                    残り約{Math.ceil(deepResearchProgress.estimatedTimeRemaining / 60)}分
+                  </div>
+                </div>
+              </div>
+              {/* プログレスバー */}
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all duration-1000"
+                  style={{
+                    width: `${Math.min(100, (deepResearchProgress.attempt / deepResearchProgress.maxAttempts) * 100)}%`,
+                  }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                ※ Google Deep Research Agentがリアルタイムで市場調査を実行しています。
+                詳細な分析には3〜5分かかる場合があります。
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 進行ログ */}
+      <ResearchProgressLog
+        logs={logs}
+        isRunning={isRunning}
+        onExportMarkdown={() => handleExport("markdown")}
+      />
+
+      {/* 結果表示 */}
+      {data.deepResearchResult && (
+        <div className="space-y-6">
+          {/* ヘッダー */}
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-full bg-primary/10">
+              <Brain className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold">Deep Research 結果</h3>
+              <p className="text-sm text-muted-foreground">
+                Google検索とAI分析による詳細レポート
+              </p>
+            </div>
+          </div>
+
+          {/* トレンドレポート */}
+          {data.deepResearchResult.trendReport && (
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="w-5 h-5 text-blue-500" />
+                  <h4 className="font-semibold">トレンドレポート</h4>
+                </div>
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <div className="whitespace-pre-wrap text-sm">
+                    {data.deepResearchResult.trendReport}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 市場分析 */}
+          {data.deepResearchResult.marketAnalysis && (
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart3 className="w-5 h-5 text-green-500" />
+                  <h4 className="font-semibold">市場分析</h4>
+                </div>
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <div className="whitespace-pre-wrap text-sm">
+                    {data.deepResearchResult.marketAnalysis}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 心理学的インサイト */}
+          {data.deepResearchResult.psychologyInsights && (
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Brain className="w-5 h-5 text-purple-500" />
+                  <h4 className="font-semibold">心理学的インサイト</h4>
+                </div>
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <div className="whitespace-pre-wrap text-sm">
+                    {data.deepResearchResult.psychologyInsights}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 推奨事項 */}
+          {data.deepResearchResult.recommendations && data.deepResearchResult.recommendations.length > 0 && (
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Lightbulb className="w-5 h-5 text-yellow-500" />
+                  <h4 className="font-semibold">推奨事項</h4>
+                </div>
+                <ul className="space-y-2">
+                  {data.deepResearchResult.recommendations.map((rec, i) => (
+                    <li key={i} className="flex gap-2 text-sm">
+                      <span className="font-bold text-primary">{i + 1}.</span>
+                      <span>{rec}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 信念移転 */}
+          {data.deepResearchResult.beliefTransfer && (
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Brain className="w-5 h-5 text-indigo-500" />
+                  <h4 className="font-semibold">信念移転設計</h4>
+                </div>
+                <div className="space-y-3">
+                  {data.deepResearchResult.beliefTransfer.currentBeliefs.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">現状の信念</div>
+                      <ul className="text-sm space-y-1">
+                        {data.deepResearchResult.beliefTransfer.currentBeliefs.map((belief, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <span>{belief}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {data.deepResearchResult.beliefTransfer.desiredBeliefs.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">望ましい信念</div>
+                      <ul className="text-sm space-y-1">
+                        {data.deepResearchResult.beliefTransfer.desiredBeliefs.map((belief, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-primary">→</span>
+                            <span>{belief}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {data.deepResearchResult.beliefTransfer.bridgeLogic.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">橋渡しロジック</div>
+                      <ul className="text-sm space-y-1">
+                        {data.deepResearchResult.beliefTransfer.bridgeLogic.map((logic, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-green-600">✓</span>
+                            <span>{logic}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 損失回避バイアス */}
+          {data.deepResearchResult.lossAversion && (
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="w-5 h-5 text-red-500" />
+                  <h4 className="font-semibold">損失回避訴求</h4>
+                </div>
+                <div className="space-y-3">
+                  {data.deepResearchResult.lossAversion.doNothingRisks.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">行動しないリスク</div>
+                      <ul className="text-sm space-y-1">
+                        {data.deepResearchResult.lossAversion.doNothingRisks.map((risk, i) => (
+                          <li key={i} className="flex gap-2 text-red-600 dark:text-red-400">
+                            <span>⚠</span>
+                            <span>{risk}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {data.deepResearchResult.lossAversion.opportunityCosts.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">機会損失</div>
+                      <ul className="text-sm space-y-1">
+                        {data.deepResearchResult.lossAversion.opportunityCosts.map((cost, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <span>{cost}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* AIDAインサイト */}
+          {data.deepResearchResult.aidaInsights && (
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart3 className="w-5 h-5 text-blue-500" />
+                  <h4 className="font-semibold">AIDA心理障壁分析</h4>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {data.deepResearchResult.aidaInsights.attention.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-blue-600 mb-2">Attention（注意）</div>
+                      <ul className="text-sm space-y-1">
+                        {data.deepResearchResult.aidaInsights.attention.map((item, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {data.deepResearchResult.aidaInsights.interest.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-green-600 mb-2">Interest（関心）</div>
+                      <ul className="text-sm space-y-1">
+                        {data.deepResearchResult.aidaInsights.interest.map((item, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {data.deepResearchResult.aidaInsights.desire.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-yellow-600 mb-2">Desire（欲求）</div>
+                      <ul className="text-sm space-y-1">
+                        {data.deepResearchResult.aidaInsights.desire.map((item, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {data.deepResearchResult.aidaInsights.action.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-purple-600 mb-2">Action（行動）</div>
+                      <ul className="text-sm space-y-1">
+                        {data.deepResearchResult.aidaInsights.action.map((item, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 競合分析（拡張版） */}
+          {data.deepResearchResult.competitorAnalysis && (
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className="w-5 h-5 text-orange-500" />
+                  <h4 className="font-semibold">競合分析・業界の闇</h4>
+                </div>
+                <div className="space-y-4">
+                  {data.deepResearchResult.competitorAnalysis.industryDarkness.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-red-600 mb-2">業界の闇・不都合な真実</div>
+                      <ul className="text-sm space-y-1">
+                        {data.deepResearchResult.competitorAnalysis.industryDarkness.map((dark, i) => (
+                          <li key={i} className="flex gap-2 text-red-600 dark:text-red-400">
+                            <span>⚠</span>
+                            <span>{dark}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {data.deepResearchResult.competitorAnalysis.commonEnemyCandidates.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-2">共通の敵候補</div>
+                      <ul className="text-sm space-y-1">
+                        {data.deepResearchResult.competitorAnalysis.commonEnemyCandidates.map((enemy, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <span>{enemy}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {data.deepResearchResult.competitorAnalysis.headlinePatterns.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-2">ヘッドラインパターン</div>
+                      <ul className="text-sm space-y-1">
+                        {data.deepResearchResult.competitorAnalysis.headlinePatterns.map((pattern, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-muted-foreground">•</span>
+                            <span>{pattern}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* N1ペルソナ */}
+          {data.deepResearchResult.persona && (
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <User className="w-5 h-5 text-pink-500" />
+                  <h4 className="font-semibold">N1ペルソナ</h4>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <div className="font-semibold">{data.deepResearchResult.persona.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {data.deepResearchResult.persona.age}歳 / {data.deepResearchResult.persona.occupation}
+                      </div>
+                    </div>
+                  </div>
+                  {data.deepResearchResult.persona.context && (
+                    <div>
+                      <div className="text-xs font-medium text-muted-foreground mb-1">背景・状況</div>
+                      <p className="text-sm">{data.deepResearchResult.persona.context}</p>
+                    </div>
+                  )}
+                  {data.deepResearchResult.persona.painQuotes.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-red-600 mb-2">痛みの言葉</div>
+                      <ul className="text-sm space-y-1">
+                        {data.deepResearchResult.persona.painQuotes.map((quote, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-red-500">&quot;</span>
+                            <span className="italic">{quote}</span>
+                            <span className="text-red-500">&quot;</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {data.deepResearchResult.persona.desireQuotes.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-green-600 mb-2">欲求の言葉</div>
+                      <ul className="text-sm space-y-1">
+                        {data.deepResearchResult.persona.desireQuotes.map((quote, i) => (
+                          <li key={i} className="flex gap-2">
+                            <span className="text-green-500">&quot;</span>
+                            <span className="italic">{quote}</span>
+                            <span className="text-green-500">&quot;</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {data.deepResearchResult.persona.attractiveCharacter && (
+                    <div className="border-t pt-3">
+                      <div className="text-xs font-medium text-muted-foreground mb-2">アトラクティブキャラクター</div>
+                      <div className="space-y-2 text-sm">
+                        {data.deepResearchResult.persona.attractiveCharacter.backstory && (
+                          <div>
+                            <span className="font-medium">バックストーリー: </span>
+                            <span>{data.deepResearchResult.persona.attractiveCharacter.backstory}</span>
+                          </div>
+                        )}
+                        {data.deepResearchResult.persona.attractiveCharacter.parable && (
+                          <div>
+                            <span className="font-medium">寓話・比喩: </span>
+                            <span>{data.deepResearchResult.persona.attractiveCharacter.parable}</span>
+                          </div>
+                        )}
+                        {data.deepResearchResult.persona.attractiveCharacter.flaw && (
+                          <div>
+                            <span className="font-medium">欠点: </span>
+                            <span>{data.deepResearchResult.persona.attractiveCharacter.flaw}</span>
+                          </div>
+                        )}
+                        {data.deepResearchResult.persona.attractiveCharacter.polarity && (
+                          <div>
+                            <span className="font-medium">極性・立場: </span>
+                            <span>{data.deepResearchResult.persona.attractiveCharacter.polarity}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 参考URL（引用） */}
+          {data.deepResearchResult.citations && data.deepResearchResult.citations.length > 0 && (
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <LinkIcon className="w-5 h-5 text-cyan-500" />
+                  <h4 className="font-semibold">参考URL</h4>
+                </div>
+                <ul className="space-y-3">
+                  {data.deepResearchResult.citations.map((citation, i) => (
+                    <li key={i} className="flex gap-3 items-start">
+                      <span className="text-xs text-muted-foreground pt-1">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <a
+                          href={citation.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
+                        >
+                          {citation.title}
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                        {citation.snippet && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                            {citation.snippet}
+                          </p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* 未実行時 */}
+      {!data.deepResearchResult && deepResearchProgress.status === "idle" && (
+        <div className="text-center py-8 space-y-4">
+          <div className="p-4 rounded-full bg-primary/10 w-20 h-20 mx-auto flex items-center justify-center">
+            <Brain className="w-10 h-10 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-lg">Deep Research（PRO機能）</h3>
+            <p className="text-muted-foreground text-sm mt-1">
+              Google Deep Research Agentによる詳細な市場分析・トレンド調査
+            </p>
+          </div>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>• リアルタイムのGoogle検索による最新情報収集</p>
+            <p>• ターゲット心理・購買行動の詳細分析</p>
+            <p>• 競合戦略・市場トレンドのレポート生成</p>
+            <p className="text-yellow-600 dark:text-yellow-400">
+              ※ 処理に3〜5分かかります
+            </p>
+          </div>
+          <div className="flex justify-center gap-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleSkipStep("deep_research")}
+              className="flex items-center gap-1"
+            >
+              <SkipForward className="w-4 h-4" />
+              スキップ
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   // 初期設定ステップ
   const renderInitStep = () => (
@@ -931,16 +1745,6 @@ export default function ResearchPage() {
           </div>
         </div>
 
-        {/* トンマナ */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">雰囲気・トンマナ</label>
-          <CheckboxGroup
-            options={Object.keys(MOOD_LABELS) as Mood[]}
-            labels={MOOD_LABELS}
-            selected={moods}
-            onChange={setMoods}
-          />
-        </div>
       </div>
 
       {/* ===== 詳細設定（任意・折りたたみ） ===== */}
@@ -1125,6 +1929,24 @@ export default function ResearchPage() {
   // コンセプト生成ステップ
   const renderConceptStep = () => (
     <div className="space-y-4">
+      {/* ストーリー型情報 */}
+      {data.recommendedStoryType && (
+        <div className="mb-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium">推奨ストーリー型</span>
+          </div>
+          <div className="text-sm font-semibold text-primary">
+            {data.storyTypeLabel || data.recommendedStoryType}
+          </div>
+          {data.storyTypeDescription && (
+            <div className="text-xs text-muted-foreground mt-1">
+              {data.storyTypeDescription}
+            </div>
+          )}
+        </div>
+      )}
+
       {data.concepts.length > 0 ? (
         <ConceptList
           concepts={data.concepts}
@@ -1234,11 +2056,14 @@ export default function ResearchPage() {
 
       {/* 結果タブ */}
       <Tabs defaultValue="concepts">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className={`grid w-full ${data.deepResearchResult ? "grid-cols-5" : "grid-cols-4"}`}>
           <TabsTrigger value="concepts">コンセプト</TabsTrigger>
           <TabsTrigger value="competitors">競合</TabsTrigger>
           <TabsTrigger value="pain">悩み</TabsTrigger>
           <TabsTrigger value="keywords">キーワード</TabsTrigger>
+          {data.deepResearchResult && (
+            <TabsTrigger value="deep_research">Deep Research</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="concepts" className="mt-4">
@@ -1266,6 +2091,126 @@ export default function ResearchPage() {
         <TabsContent value="keywords" className="mt-4">
           {data.keywords && <KeywordBank result={data.keywords} />}
         </TabsContent>
+
+        {data.deepResearchResult && (
+          <TabsContent value="deep_research" className="mt-4 space-y-4">
+            {/* Deep Research サマリー */}
+            <Card className="bg-primary/5 border-primary/20">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <Brain className="w-6 h-6 text-primary" />
+                  <h3 className="font-semibold">Deep Research 結果</h3>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">
+                      {data.deepResearchResult.recommendations?.length || 0}
+                    </div>
+                    <div className="text-sm text-muted-foreground">推奨事項</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">
+                      {data.deepResearchResult.citations?.length || 0}
+                    </div>
+                    <div className="text-sm text-muted-foreground">参考URL</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">✓</div>
+                    <div className="text-sm text-muted-foreground">完了</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 各セクション */}
+            {data.deepResearchResult.trendReport && (
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <TrendingUp className="w-5 h-5 text-blue-500" />
+                    <h4 className="font-semibold">トレンドレポート</h4>
+                  </div>
+                  <div className="whitespace-pre-wrap text-sm">{data.deepResearchResult.trendReport}</div>
+                </CardContent>
+              </Card>
+            )}
+
+            {data.deepResearchResult.marketAnalysis && (
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <BarChart3 className="w-5 h-5 text-green-500" />
+                    <h4 className="font-semibold">市場分析</h4>
+                  </div>
+                  <div className="whitespace-pre-wrap text-sm">{data.deepResearchResult.marketAnalysis}</div>
+                </CardContent>
+              </Card>
+            )}
+
+            {data.deepResearchResult.psychologyInsights && (
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Brain className="w-5 h-5 text-purple-500" />
+                    <h4 className="font-semibold">心理学的インサイト</h4>
+                  </div>
+                  <div className="whitespace-pre-wrap text-sm">{data.deepResearchResult.psychologyInsights}</div>
+                </CardContent>
+              </Card>
+            )}
+
+            {data.deepResearchResult.recommendations && data.deepResearchResult.recommendations.length > 0 && (
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Lightbulb className="w-5 h-5 text-yellow-500" />
+                    <h4 className="font-semibold">推奨事項</h4>
+                  </div>
+                  <ul className="space-y-2">
+                    {data.deepResearchResult.recommendations.map((rec, i) => (
+                      <li key={i} className="flex gap-2 text-sm">
+                        <span className="font-bold text-primary">{i + 1}.</span>
+                        <span>{rec}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+
+            {data.deepResearchResult.citations && data.deepResearchResult.citations.length > 0 && (
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <LinkIcon className="w-5 h-5 text-cyan-500" />
+                    <h4 className="font-semibold">参考URL</h4>
+                  </div>
+                  <ul className="space-y-2">
+                    {data.deepResearchResult.citations.map((citation, i) => (
+                      <li key={i} className="flex gap-2 items-start">
+                        <span className="text-xs text-muted-foreground pt-1">{i + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <a
+                            href={citation.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-primary hover:underline flex items-center gap-1"
+                          >
+                            {citation.title}
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                          {citation.snippet && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{citation.snippet}</p>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* 発見したURL一覧 */}
